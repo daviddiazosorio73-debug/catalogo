@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="theme-color" content="#151823">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--g1:#151823;--g2:#262b3d;--gold:#f2c94c;--red:#e8264f;--green:#13a653;--bg:#eef0f5;--card:#fff;--ink:#151823;--mut:#667;--line:#e3e5ec}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 'Space Grotesk',system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
+header{position:sticky;top:0;z-index:5;background:var(--g1);color:#fff;padding:10px 14px 8px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.top b{font-size:16px}.top small{color:#aab}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.k{background:var(--g2);border-radius:10px;padding:6px 8px}
+.k span{display:block;font-size:11px;color:#aab}.k b{font-size:15px;color:var(--gold)}
+.bar{height:6px;background:#333a50;border-radius:9px;margin-top:8px;overflow:hidden}.bar i{display:block;height:100%;background:var(--gold);transition:width .4s}
+main{padding:12px;max-width:760px;margin:0 auto}
+.card{background:var(--card);border-radius:18px;padding:16px;box-shadow:0 6px 24px rgba(20,24,35,.08);animation:in .25s ease}
+@keyframes in{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.chip{font-size:12px;padding:3px 9px;border-radius:99px;background:#f1f2f6;font-weight:600}
+.chip.r{background:#ffe3ea;color:#b0123a}.chip.g{background:#ddf6e7;color:#0b7a3b}.chip.y{background:#fff3cc;color:#7a5a00}.chip.d{background:var(--g1);color:var(--gold)}
+h1{font-size:21px;margin:2px 0 2px;line-height:1.2}
+.sub{color:var(--mut);font-size:13px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.dato{background:#f7f8fb;border-radius:10px;padding:8px 10px}.dato span{display:block;font-size:11px;color:var(--mut)}.dato b{font-size:14px;word-break:break-word}
+.acts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 0}
+.btn{border:0;border-radius:12px;padding:12px 10px;font:600 15px 'Space Grotesk',system-ui;cursor:pointer;text-align:center;text-decoration:none;color:#fff;background:var(--g1);display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn.red{background:var(--red)}.btn.green{background:var(--green)}.btn.gold{background:var(--gold);color:var(--ink)}.btn.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line)}
+.btn:disabled{opacity:.5}
+details{border-top:1px solid var(--line);padding:10px 0}
+summary{font-weight:700;cursor:pointer;list-style:none}summary::-webkit-details-marker{display:none}
+summary::after{content:'＋';float:right;color:var(--mut)}details[open] summary::after{content:'－'}
+.ia{background:linear-gradient(135deg,#fffaf0,#fff);border:1.5px solid var(--gold);border-radius:12px;padding:10px 12px;margin:10px 0}
+.ia ol{margin:6px 0 0 18px;padding:0}.ia li{margin:4px 0}
+.hist div{font-size:13px;padding:5px 0;border-bottom:1px dashed var(--line)}
+.res{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.res button{border:1.5px solid var(--line);background:#fff;border-radius:99px;padding:8px 11px;font:600 13px 'Space Grotesk',system-ui,sans-serif;cursor:pointer}
+.res button.on{background:var(--g1);color:var(--gold);border-color:var(--g1)}
+textarea,input,select{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:10px;font:15px 'Space Grotesk',system-ui;background:#fff}
+textarea{min-height:76px;resize:vertical}
+.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}
+.save{position:sticky;bottom:0;background:linear-gradient(transparent,var(--bg) 30%);padding:14px 0 8px;display:grid;grid-template-columns:1fr 2fr;gap:8px}
+.vacio{text-align:center;padding:50px 20px}.vacio .big{font-size:56px}
+.toast{position:fixed;left:50%;top:86px;transform:translateX(-50%);background:var(--g1);color:#fff;padding:10px 16px;border-radius:12px;z-index:50;font-weight:600}
+.lst .it{background:#fff;border-radius:12px;padding:10px 12px;margin:8px 0;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+.prod{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
+.prod button{flex:0 0 auto}
+.mini{font-size:12px;color:var(--mut)}
+.load{opacity:.6;pointer-events:none}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet>div{background:#fff;width:min(760px,100%);max-height:88vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px}
+</style>
+</head>
+<body>
+<header>
+  <div class="top"><div><b>Panel de ventas</b><br><small id="fecha">Cargando…</small></div><button class="btn gold" id="recargar" style="padding:8px 12px">↻</button></div>
+  <div class="kpis">
+    <div class="k"><span>Hoy</span><b id="kHoy">–</b></div>
+    <div class="k"><span>En cola</span><b id="kCola">–</b></div>
+    <div class="k"><span>Venta mes</span><b id="kVenta">–</b></div>
+    <div class="k"><span>Avance</span><b id="kAv">–</b></div>
+  </div>
+  <div class="bar"><i id="pbar" style="width:0"></i></div>
+</header>
+<main id="main"><div class="vacio"><div class="big">⏳</div>Preparando tu día…</div></main>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+(function(){
+'use strict';
+var D = null, i = 0, sel = null, prods = null, cot = {};
+var $ = function(s){ return document.querySelector(s); };
+var esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+var money = function(n){ return 'S/ ' + Number(n||0).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+function run(fn){ var args = [].slice.call(arguments,1); return new Promise(function(ok,ko){ google.script.run.withSuccessHandler(ok).withFailureHandler(ko)[fn].apply(null,args); }); }
+function toast(t){ var e=$('#toast'); e.textContent=t; e.hidden=false; clearTimeout(toast.t); toast.t=setTimeout(function(){e.hidden=true;},2200); }
+
+function cargar(){
+  $('#main').classList.add('load');
+  run('panelDatos').then(function(d){
+    D = d; i = 0; $('#main').classList.remove('load');
+    $('#fecha').textContent = d.hoy + (d.modo==='llamadas' ? ' · llamadas' : d.modo==='revision' ? ' · revisión' : ' · descanso');
+    $('#kVenta').textContent = d.kpi.venta; $('#kAv').textContent = d.kpi.avance;
+    kpis();
+    if (d.modo === 'revision') return revision();
+    if (d.modo === 'descanso') return descanso();
+    pintar();
+  }).catch(function(e){ $('#main').classList.remove('load'); $('#main').innerHTML = '<div class="vacio"><div class="big">⚠️</div>'+esc(e.message||e)+'<br><br><button class="btn" onclick="location.reload()">Reintentar</button></div>'; });
+}
+function kpis(){
+  $('#kHoy').textContent = D.kpi.hechasHoy + '/' + D.kpi.metaDia;
+  $('#kCola').textContent = Math.max(0, D.cola.length - i);
+  $('#pbar').style.width = Math.min(100, Math.round(D.kpi.hechasHoy / D.kpi.metaDia * 100)) + '%';
+}
+
+// ---------- Un cliente por pantalla ----------
+function pintar(){
+  kpis();
+  var c = D.cola[i];
+  if (!c){ $('#main').innerHTML = '<div class="vacio"><div class="big">✅</div><h1>Lista del día completa</h1><p class="sub">'+D.kpi.hechasHoy+' contactos hoy. Pedidos por atender: '+esc(D.kpi.pedidosPorAtender)+'</p><button class="btn" id="otra">↻ Volver a cargar</button></div>'; $('#otra').onclick=cargar; return; }
+  sel = null; cot = {};
+  var chips = '<span class="chip d">'+(i+1)+' de '+D.cola.length+'</span>';
+  chips += '<span class="chip '+(c.rango===0?'r':c.rango===1?'y':'')+'">'+esc(c.motivo)+'</span>';
+  if (c.pendienteDe) chips += '<span class="chip r">⚠ Pendiente del '+esc(c.pendienteDe)+'</span>';
+  if (c.intento > 1) chips += '<span class="chip r">Intento #'+c.intento+'</span>';
+  chips += '<span class="chip '+(c.puntaje>=60?'g':c.puntaje>=35?'y':'')+'">Puntaje '+c.puntaje+'</span>';
+  var tel = c.wa ? '+'+c.wa : (c.cel2 ? '+'+c.cel2 : '');
+  var fijo = String(c.fijo||'').replace(/[^\d]/g,'');
+  var ped = c.pedidos.length ? c.pedidos.map(function(p){ return '<div><b>'+esc(p.f)+'</b> · '+esc(p.num)+' · '+esc(p.items)+' · '+money(p.total)+' · '+esc(p.estado)+'</div>'; }).join('') : '<div class="mini">Sin compras registradas en Pedidos.</div>';
+  var web = c.web.length ? c.web.map(function(w){ return '<div><b>'+esc(w.tipo)+'</b> '+esc(w.f)+' '+esc(w.num)+' · '+esc(w.items)+' · '+money(w.total)+' '+esc(w.estado)+'</div>'; }).join('') : '';
+  var hist = c.historial.length ? c.historial.map(function(h){ return '<div><b>'+esc(h.f)+'</b> · '+esc(h.res)+(h.com?' — '+esc(h.com):'')+'</div>'; }).join('') : '<div class="mini">Primer contacto.</div>';
+  $('#main').innerHTML = '<div class="card" id="card">'+
+    '<div class="chips">'+chips+'</div>'+
+    '<h1>'+esc(c.razon)+'</h1>'+
+    '<div class="sub">'+esc(c.id)+' · RUC '+esc(c.ruc)+(c.contacto?' · '+esc(c.contacto):'')+'</div>'+
+    '<div class="grid2">'+
+      dato('Zona', c.zona + (c.ciudad?' · '+c.ciudad:''))+dato('Etapa', c.etapa)+
+      dato('Condición de pago', (c.pago||'—') + (c.linea?' · línea '+c.linea:''))+dato('Contactos', c.contactos + (c.intento>1?' · intento #'+c.intento:''))+
+      dato('En proceso', c.accion ? c.accion + (c.fechaAccion?' ('+c.fechaAccion+')':'') : '—')+
+      dato('Última compra', c.pedidos[0] ? c.pedidos[0].f+' · '+money(c.pedidos[0].total) : (c.web[0] && c.web[0].tipo==='Orden web' ? c.web[0].f+' (web)' : 'Sin compras'))+
+    '</div>'+
+    (c.recompra ? '<div class="chip g" style="display:inline-block;margin-bottom:8px">Compra cada '+c.recompra.ciclo+' días · próxima ~'+esc(c.recompra.proxima)+'</div>' : '')+
+    '<div class="acts">'+
+      (tel ? '<a class="btn red" href="tel:'+tel+'">📞 Llamar</a>' : '<button class="btn red" disabled>Sin celular</button>')+
+      (c.wa ? '<a class="btn green" id="wa" target="_blank" href="https://wa.me/'+c.wa+'?text='+encodeURIComponent(D.mensajeVenta)+'">WhatsApp</a>' : '<button class="btn green" disabled>WhatsApp</button>')+
+      (fijo ? '<a class="btn ghost" href="tel:'+fijo+'">☎ Fijo</a>' : '<button class="btn ghost" id="bCot">🧾 Cotizar</button>')+
+    '</div>'+
+    (fijo ? '<button class="btn ghost" id="bCot" style="width:100%">🧾 Cotización en 1 clic</button>' : '')+
+    '<div class="ia" id="ia">'+(D.ia ? '✨ Preparando tu guion…' : '✨ Activa la IA (GEMINI_API_KEY) para ver el guion de esta llamada.')+'</div>'+
+    (web ? '<details open><summary>Catálogo web</summary><div class="hist">'+web+'</div></details>' : '')+
+    '<details><summary>Compras</summary><div class="hist">'+ped+'</div></details>'+
+    '<details '+(c.historial.length?'open':'')+'><summary>Últimos contactos</summary><div class="hist">'+hist+'</div></details>'+
+    (c.notas ? '<details><summary>Notas</summary><div class="mini" style="font-size:13px">'+esc(c.notas)+'</div></details>' : '')+
+    '<h3 style="margin:14px 0 4px">¿Cómo te fue?</h3>'+
+    '<div class="res" id="res">'+D.resultados.map(function(r){ return '<button data-r="'+esc(r)+'">'+esc(r)+'</button>'; }).join('')+'</div>'+
+    '<textarea id="com" placeholder="Escribe o dicta lo que dijo el cliente (🎤 del teclado)…"></textarea>'+
+    (D.ia ? '<button class="btn ghost" id="ordenar" style="width:100%;margin-top:8px">✨ Ordenar mis notas con IA</button>' : '')+
+    '<div class="row" style="margin-top:8px"><input id="acc" placeholder="Próxima acción"><input id="fec" type="date"></div>'+
+    '<div class="save"><button class="btn ghost" id="saltar">Saltar ⏭</button><button class="btn red" id="guardar">Guardar y siguiente →</button></div>'+
+  '</div>';
+  $('#res').onclick = function(e){ var b = e.target.closest('button'); if (!b) return; elegir(b.dataset.r); };
+  $('#guardar').onclick = guardar;
+  $('#saltar').onclick = function(){ D.cola.push(D.cola.splice(i,1)[0]); pintar(); toast('Lo dejé al final de la lista'); };
+  $('#bCot').onclick = cotizar;
+  if ($('#ordenar')) $('#ordenar').onclick = ordenar;
+  if (D.ia) cargarIA(c);
+  window.scrollTo(0,0);
+}
+function dato(t,v){ return '<div class="dato"><span>'+esc(t)+'</span><b>'+esc(v||'—')+'</b></div>'; }
+function fechaISO(dias){ var f=new Date(); f.setDate(f.getDate()+dias); while(dias>0 && [5,6,0].indexOf(f.getDay())>=0) f.setDate(f.getDate()+1); return f.toISOString().slice(0,10); }
+function elegir(r, accion, fecha){
+  sel = r;
+  [].forEach.call(document.querySelectorAll('#res button'), function(b){ b.classList.toggle('on', b.dataset.r===r); });
+  var g = D.reglas[r] || [];
+  $('#acc').value = accion || g[1] || '';
+  $('#fec').value = fecha || (g[1] ? fechaISO(g[2]) : '');
+}
+function cargarIA(c){
+  run('panelIA', c).then(function(o){
+    if (D.cola[i] !== c) return;
+    if (!o.ok){ $('#ia').textContent = '✨ '+o.error; return; }
+    $('#ia').innerHTML = '<b>✨ Guion IA</b><ol>'+o.guion.map(function(g){ return '<li>'+esc(g)+'</li>'; }).join('')+'</ol>'+
+      (o.objecion ? '<div class="mini" style="margin-top:6px"><b>Si dice que no:</b> '+esc(o.objecion)+'</div>' : '');
+    if (o.whatsapp && $('#wa')) $('#wa').href = 'https://wa.me/'+c.wa+'?text='+encodeURIComponent(o.whatsapp);
+  }).catch(function(){ if (D.cola[i]===c) $('#ia').textContent = '✨ La IA no respondió; sigue con tu guion de siempre.'; });
+}
+function ordenar(){
+  var t = $('#com').value.trim(); if (!t) return toast('Escribe primero lo que pasó');
+  var b = $('#ordenar'); b.disabled = true; b.textContent = '✨ Ordenando…';
+  run('panelNotasIA', t, D.cola[i]).then(function(o){
+    b.disabled = false; b.textContent = '✨ Ordenar mis notas con IA';
+    if (!o.ok) return toast(o.error);
+    var m = String(o.fecha||'').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    elegir(o.resultado, o.accion, m ? m[3]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[1]).slice(-2) : '');
+    $('#com').value = o.comentario;
+    toast('Revisa y guarda');
+  }).catch(function(e){ b.disabled=false; b.textContent='✨ Ordenar mis notas con IA'; toast('IA: '+(e.message||e)); });
+}
+function guardar(){
+  if (!sel) return toast('Elige cómo te fue');
+  var c = D.cola[i], btn = $('#guardar'); btn.disabled = true; btn.textContent = 'Guardando…';
+  var f = $('#fec').value; var fd = f ? f.split('-').reverse().join('/') : '';
+  var x = { id: c.id, resultado: sel, comentario: $('#com').value.trim(), accion: $('#acc').value.trim(), fecha: fd };
+  // Pasa al siguiente al instante; si falla, vuelve
+  D.cola.splice(i,1); D.kpi.hechasHoy++; pintar();
+  run('panelRegistrar', x).then(function(){ toast('✓ '+c.razon+': '+x.resultado); })
+    .catch(function(e){ D.cola.splice(i,0,c); D.kpi.hechasHoy--; pintar(); toast('No se guardó: '+(e.message||e)); });
+}
+
+// ---------- Cotización en 1 clic ----------
+function cotizar(){
+  var c = D.cola[i];
+  var div = document.createElement('div'); div.className = 'sheet';
+  div.innerHTML = '<div><div class="row"><b style="flex:3">🧾 Cotización para '+esc(c.razon)+'</b><button class="btn ghost" id="cx" style="flex:0 0 auto">✕</button></div>'+
+    '<input id="cq" placeholder="Busca por código, producto o marca…" style="margin:10px 0">'+
+    '<div id="cl" class="mini">Cargando catálogo…</div><h3>Seleccionados</h3><div id="cs" class="mini">Nada aún.</div>'+
+    '<div class="save" style="grid-template-columns:1fr 1fr"><button class="btn ghost" id="ccopy">Copiar enlace</button><button class="btn green" id="cwa">Enviar por WhatsApp</button></div></div>';
+  document.body.appendChild(div);
+  $('#cx').onclick = function(){ div.remove(); };
+  var lista = function(){
+    var q = $('#cq').value.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').split(/\s+/).filter(Boolean);
+    var r = prods.filter(function(p){ var t=(p.c+' '+p.n+' '+p.m+' '+p.k).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); return q.every(function(w){return t.indexOf(w)>=0;}); });
+    if (!q.length) r = prods.filter(function(p){ return p.o; });
+    $('#cl').innerHTML = (q.length?'':'<div class="mini">Ofertas vigentes:</div>') + r.slice(0,30).map(function(p){ return '<div class="prod"><span><b>'+esc(p.c)+'</b> '+esc(p.n)+'<br>'+money(p.p)+(p.o?' · oferta '+esc(p.o):'')+'</span><button class="btn ghost" data-a="'+esc(p.id)+'">+1</button></div>'; }).join('') || 'Sin resultados.';
+  };
+  var sel2 = function(){
+    var ids = Object.keys(cot); var t = 0;
+    $('#cs').innerHTML = ids.length ? ids.map(function(id){ var p = prods.filter(function(x){return x.id===id;})[0]; t += p.p*cot[id]; return '<div class="prod"><span>'+cot[id]+' × <b>'+esc(p.c)+'</b> '+esc(p.n)+'</span><button class="btn ghost" data-q="'+esc(id)+'">−</button></div>'; }).join('') + '<div class="prod"><b>Total PVP</b><b>'+money(t)+'</b></div>' : 'Nada aún.';
+  };
+  div.onclick = function(e){ var b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.a){ cot[b.dataset.a] = (cot[b.dataset.a]||0)+1; sel2(); }
+    if (b.dataset.q){ cot[b.dataset.q]--; if (cot[b.dataset.q]<=0) delete cot[b.dataset.q]; sel2(); } };
+  var enlace = function(){ return D.catalogo + '?d=cot&ruc=' + c.ruc + '&pedido=' + Object.keys(cot).map(function(id){ return encodeURIComponent(id)+'*'+cot[id]; }).join(','); };
+  $('#ccopy').onclick = function(){ if (!Object.keys(cot).length) return toast('Agrega productos'); navigator.clipboard.writeText(enlace()).then(function(){ toast('Enlace copiado'); }); };
+  $('#cwa').onclick = function(){ if (!Object.keys(cot).length) return toast('Agrega productos');
+    var txt = 'Hola'+(c.contacto?' '+c.contacto:'')+', le comparto la cotización que conversamos. Puede revisarla, ajustar cantidades y confirmar su orden con firma aquí: '+enlace()+' · David Díaz, Tecno Log IA (solo distribuidores y mayoristas).';
+    window.open('https://wa.me/'+(c.wa||'')+'?text='+encodeURIComponent(txt), '_blank'); };
+  $('#cq').oninput = function(){ clearTimeout(lista.t); lista.t = setTimeout(lista, 200); };
+  if (prods) lista(); else run('panelProductos').then(function(p){ prods = p; lista(); }).catch(function(){ $('#cl').textContent='No pude cargar el catálogo.'; });
+}
+
+// ---------- Viernes: revisión ----------
+var ESTADOS = ['Nuevo','Confirmado','Facturado','Despachado','Entregado','Pagado','Anulado'];
+function revision(){
+  $('#main').innerHTML = '<div class="card"><h1>Viernes de revisión</h1><p class="sub">Hoy no hay llamadas. Pon al día pedidos, envíos y facturas.</p><div id="rv">Cargando…</div></div>';
+  run('panelRevision').then(function(r){
+    var s = r.semana;
+    $('#rv').innerHTML = '<div class="grid2">'+dato('Contactos de la semana', s.contactos)+dato('Interesados', s.interesados)+dato('Pedidos de la semana', s.pedidos)+dato('Pendientes → lunes', s.pendientes)+'</div>'+
+      '<h3>Pedidos por cerrar ('+r.abiertos.length+')</h3><div class="lst">'+(r.abiertos.map(function(p,k){ return '<div class="it"><b>'+esc(p.num)+'</b> · '+esc(p.razon)+'<div class="mini">'+esc(p.fecha)+' · '+esc(p.items)+' · '+money(p.total)+'</div>'+
+        '<select data-k="'+k+'">'+ESTADOS.map(function(e){ return '<option'+(e===p.estado?' selected':'')+'>'+e+'</option>'; }).join('')+'</select></div>'; }).join('') || '<p class="mini">Todo al día ✅</p>')+'</div>'+
+      '<h3>✨ Plan de la próxima semana</h3><div class="ia">'+(r.plan ? esc(r.plan).replace(/\n/g,'<br>') : 'Activa la IA para recibir el plan.')+'</div>'+
+      '<button class="btn ghost" id="verCola" style="width:100%">Ver la lista de clientes igual</button>';
+    $('#rv').onchange = function(e){ var k = e.target.dataset.k; if (k==null) return; run('panelEstadoPedido', r.abiertos[k].filas, e.target.value).then(function(){ toast('✓ '+r.abiertos[k].num+' → '+e.target.value); }); };
+    $('#verCola').onclick = pintar;
+  }).catch(function(e){ $('#rv').textContent = 'Error: '+(e.message||e); });
+}
+function descanso(){
+  $('#main').innerHTML = '<div class="vacio"><div class="big">🌿</div><h1>Fin de semana de descanso</h1><p class="sub">El lunes a las 7 a. m. tendrás tu lista lista.</p><button class="btn ghost" id="verCola">Ver la lista igual</button></div>';
+  $('#verCola').onclick = pintar;
+}
+$('#recargar').onclick = cargar;
+cargar();
+})();
+</script>
+</body>
+</html>

@@ -221,6 +221,13 @@ function registrarOrden_(d) {
 
     // A tu lista «Hoy» (prioridad 0) y el carrito queda como convertido
     try { avisarHoy_(ruc, 'Orden web ' + numero + ' · ' + money(total) + ': confirmar'); } catch (e) { /* sin acceso */ }
+    // También a «Pedidos» de la hoja de ventas (cuenta en la venta del mes y en la revisión del viernes)
+    try {
+      const pv = SpreadsheetApp.openById(cfg.hojaVentas).getSheetByName('Pedidos');
+      const zonaCli = (cli && cli.zona) || '';
+      const filasPv = lineas.map(l => [ahora, numero, (cli && cli.idCliente) || '', d.razon, zonaCli, "'" + l.codigo, l.nombre, l.cantidad, l.precio, l.subtotal, 'Nuevo', 'App', 'Orden web · RUC ' + ruc, l.marca || '']);
+      pv.getRange(pv.getLastRow() + 1, 1, filasPv.length, 14).setValues(filasPv);
+    } catch (e) { /* sin acceso a la hoja de ventas */ }
     try { cerrarCarrito_(d.sesion, ruc, numero); } catch (e) { /* sin carrito */ }
 
     // Correo al comprador con copia

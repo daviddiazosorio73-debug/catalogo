@@ -107,6 +107,17 @@
     $('#wa').href = 'https://wa.me/' + (S.config.whatsapp || '51928146619') + '?text=' + encodeURIComponent('Hola Tecno Log IA, tengo una consulta del catálogo digital.');
     mostrarAsesor();
     Object.keys(S.cart).forEach(id => { if (!S.porId[id]) delete S.cart[id]; });
+    // Cotización enviada por el asesor: ?pedido=ID*2,ID*1&ruc=20xxxxxxxxx (se aplica una sola vez)
+    const ped = params.get('pedido');
+    if (ped && !aplicar.cot) {
+      aplicar.cot = true;
+      const nuevo = {};
+      ped.split(',').forEach(x => { const [id, q] = x.split('*'); const idd = decodeURIComponent(id || ''); if (S.porId[idd] && S.porId[idd].estado !== 'Agotado') nuevo[idd] = Math.max(1, Math.min(999, parseInt(q, 10) || 1)); });
+      if (Object.keys(nuevo).length) { S.cart = nuevo; guardarCart(); setTimeout(() => { abrirCart(); toast('Tu cotización está lista: revisa y genera tu orden'); }, 300); }
+      const rucP = (params.get('ruc') || '').replace(/\D/g, '');
+      if (/^(10|15|17|20)\d{9}$/.test(rucP) && !cliente().ruc) store.set('tli_cliente', Object.assign(cliente(), { ruc: rucP }));
+      history.replaceState(null, '', location.pathname + location.hash);
+    }
     guardarCart();
     // En el refresco no se interrumpe al usuario si está viendo un producto, el carrito o la orden
     if (refresco && (!$('#pv').hidden || !$('#co').hidden || !$('#cart').hidden || !$('#play').hidden)) return;
