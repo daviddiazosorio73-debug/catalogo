@@ -146,3 +146,10 @@ h2 small{font-size:13px;color:var(--mute);font-weight:500}
 .wa svg{width:32px;fill:#fff}
 .toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:80;background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;font-weight:600;box-shadow:var(--sh)}
 footer.pie{text-align:center;color:var(--mute);font-size:13px;padding:30px 10px}
+
+/* Instalar como app */
+.inst{display:flex;align-items:center;gap:12px;max-width:1280px;margin:10px auto 0;background:#fff;border-radius:14px;padding:10px 12px;box-shadow:var(--sh);width:calc(100% - 32px)}
+.inst img{width:44px;height:44px;border-radius:10px}
+.inst div{flex:1;font-size:14px}.inst span{color:var(--mute)}
+.inst .btn{padding:10px 14px}
+.inst .x{border:0;background:none;font-size:18px;color:var(--mute)}

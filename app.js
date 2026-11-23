@@ -480,6 +480,22 @@
     }
   });
 
+  // ---------- Instalar como app (ícono en el celular) ----------
+  let promptInst = null;
+  const instalada = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const mostrarInst = () => { if (!instalada() && !store.get('tli_inst_no', false)) $('#inst').hidden = false; };
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); promptInst = e; mostrarInst(); });
+  if (esIOS) mostrarInst();
+  $('#btnInst').onclick = async () => {
+    if (promptInst) { promptInst.prompt(); const r = await promptInst.userChoice; if (r.outcome === 'accepted') $('#inst').hidden = true; promptInst = null; }
+    else if (esIOS) $('#ios').hidden = false;
+    else toast('Abre el menú ⋮ del navegador y elige «Agregar a la pantalla principal»');
+  };
+  $('#instNo').onclick = () => { $('#inst').hidden = true; store.set('tli_inst_no', true); };
+  $('#iosOk').onclick = () => { $('#ios').hidden = true; };
+  window.addEventListener('appinstalled', () => { $('#inst').hidden = true; toast('✓ Catálogo instalado'); });
+
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   cargar();
 })();
