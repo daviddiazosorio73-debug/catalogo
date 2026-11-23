@@ -1,5 +1,5 @@
 // Caché básico: la app abre rápido y funciona aunque la señal sea débil.
-const V = 'tli-v6';
+const V = 'tli-v7';
 const BASE = ['./', 'index.html', 'styles.css', 'app.js', 'config.js', 'assets/logo-wordmark.png', 'assets/icon-192.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(V).then(c => c.addAll(BASE))); self.skipWaiting(); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(k => Promise.all(k.filter(x => x !== V).map(x => caches.delete(x))))); self.clients.claim(); });

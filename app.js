@@ -69,6 +69,11 @@
   // ---------- Carga ----------
   // Muestra al instante lo guardado en el equipo y actualiza en segundo plano desde la hoja.
   async function cargar() {
+    // Índice de fotos copiadas al sitio (no bloquea más de 1,5 s)
+    try {
+      const r = await Promise.race([fetch('assets/d/index.json', { cache: 'no-cache' }), new Promise((_, ko) => setTimeout(ko, 1500))]);
+      if (r && r.ok) S.espejo = new Set(await r.json());
+    } catch { /* sin espejo: se usa Drive */ }
     const guardado = store.get('tli_cache', null);
     let mostrado = false;
     if (guardado && guardado.productos && guardado.productos.length) { aplicar(guardado); mostrado = true; }
@@ -125,11 +130,31 @@
   }
 
   // ---------- Utilidades de producto ----------
-  const fotosDe = p => [p.foto, ...(p.fotos || [])].filter(Boolean);
+  // Fotos: copia propia en el sitio (assets/d, rápida y sin límites de Google Drive) y, si falla, Drive en 2 formatos
+  const idDrive = u => { const m = String(u).match(/\/d\/([\w-]{20,})|[?&]id=([\w-]{20,})/); return m ? (m[1] || m[2]) : ''; };
+  const variantes = u => {
+    const id = idDrive(u); if (!id) return [u];
+    const v = [];
+    if (S.espejo && S.espejo.has(id)) v.push('assets/d/' + id + '.webp');
+    v.push('https://lh3.googleusercontent.com/d/' + id + '=w1000', 'https://drive.google.com/thumbnail?id=' + id + '&sz=w1000');
+    return v;
+  };
+  const fotosDe = p => { const vis = new Set(); return [p.foto, ...(p.fotos || [])].filter(Boolean).filter(f => { const k = idDrive(f) || f; if (vis.has(k)) return false; vis.add(k); return true; }).map(f => variantes(f)[0]); };
+  // Cadena de respaldo: prueba la siguiente versión de la misma foto, luego la siguiente foto del producto
+  const altsDe = p => [p.foto, ...(p.fotos || [])].filter(Boolean).flatMap(variantes).filter((x, i, a) => a.indexOf(x) === i);
+  window.tliErr = function (img) {
+    const alts = (img.dataset.alts || '').split('|').filter(Boolean);
+    const k = Number(img.dataset.k || 0) + 1;
+    if (k < alts.length) { img.dataset.k = k; img.src = alts[k]; return; }
+    img.onerror = null;
+    if (img.dataset.ph === 'no') { img.style.visibility = 'hidden'; return; }
+    img.replaceWith(Object.assign(document.createElement('div'), { className: 'noimg', innerHTML: '<div><img src="assets/icon-192.png" alt="">Foto pronto</div>' }));
+  };
+  const imgTag = (src, alts, extra = '') => `<img src="${esc(src)}" data-alts="${esc(alts.join('|'))}" data-k="${Math.max(0, alts.indexOf(src))}" onerror="tliErr(this)" ${extra}>`;
   const imgHTML = (p, cls = '') => {
     const f = fotosDe(p)[0];
     return f
-      ? `<img class="${cls}" src="${esc(f)}" alt="${esc(p.nombre)}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'noimg',innerHTML:'<div><img src=&quot;assets/icon-192.png&quot; alt=&quot;&quot;>Foto pronto</div>'}))">`
+      ? imgTag(f, altsDe(p), `class="${cls}" alt="${esc(p.nombre)}" loading="lazy"`)
       : `<div class="noimg"><div><img src="assets/icon-192.png" alt="">Foto pronto</div></div>`;
   };
   const badges = p => {
@@ -258,7 +283,7 @@
       <div class="gal">
         <div class="stage" id="stage"></div>
         ${media.length > 1 ? `<div class="thumbs">${media.map((m, i) => m.t === 'img'
-          ? `<button data-th="${i}" class="${i ? '' : 'on'}"><img src="${esc(m.src)}" alt=""></button>`
+          ? `<button data-th="${i}" class="${i ? '' : 'on'}">${imgTag(m.src, altsDe(p), 'alt="" loading="lazy" data-ph="no"')}</button>`
           : `<button data-th="${i}" class="vid">▶</button>`).join('')}</div>` : ''}
       </div>
       <div class="det">
@@ -298,7 +323,7 @@
     if (!m.length) { st.innerHTML = imgHTML(S.porId[pvEstado.id]); return; }
     const it = m[pvEstado.i];
     st.className = 'stage' + (pvEstado.zoom ? ' zoom' : '');
-    st.innerHTML = (it.t === 'img' ? `<img src="${esc(it.src)}" alt="" data-zoom>` : `<iframe src="${esc(it.src)}" allow="autoplay; fullscreen" allowfullscreen></iframe>`)
+    st.innerHTML = (it.t === 'img' ? imgTag(it.src, altsDe(S.porId[pvEstado.id]), 'alt="" data-zoom') : `<iframe src="${esc(it.src)}" allow="autoplay; fullscreen" allowfullscreen></iframe>`)
       + (m.length > 1 ? '<button class="nav l" data-m="-1">‹</button><button class="nav r" data-m="1">›</button>' : '');
     document.querySelectorAll('.thumbs button').forEach((b, i) => b.classList.toggle('on', i === pvEstado.i));
   }
@@ -327,7 +352,7 @@
     $('#play').innerHTML = `
       <div class="bar"><i id="pbar"></i></div>
       <div class="ptop"><img src="assets/logo-wordmark.png" alt="Tecno Log IA"><span>${playI + 1} / ${playL.length}</span></div>
-      <div class="pstage">${fotosDe(p)[0] ? `<img src="${esc(fotosDe(p)[0])}" alt="">` : `<div class="noimg" style="width:min(60vh,80vw);height:min(60vh,80vw);border-radius:18px"><div><img src="assets/icon-192.png" alt="">${esc(p.codigo)}</div></div>`}</div>
+      <div class="pstage">${fotosDe(p)[0] ? imgTag(fotosDe(p)[0], altsDe(p), 'alt=""') : `<div class="noimg" style="width:min(60vh,80vw);height:min(60vh,80vw);border-radius:18px"><div><img src="assets/icon-192.png" alt="">${esc(p.codigo)}</div></div>`}</div>
       <div class="pinfo"><div>${esc(p.marca || '')} · ${esc(p.codigo)}</div><h3>${esc(p.nombre)}</h3><div class="pp">${money(p.pvp)}</div></div>
       <div class="pctl">
         <button class="btn ghost" data-pl="-1">‹ Anterior</button>

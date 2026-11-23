@@ -1,0 +1,31 @@
+name: Copiar fotos del catálogo al sitio
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "17 9 * * *"   # todos los días 04:17 Lima (fotos nuevas)
+  push:
+    paths: [".github/workflows/fotos.yml", "scripts/espejo_fotos.py"]
+
+concurrency:
+  group: fotos
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  espejo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install -q requests pillow
+      - run: python scripts/espejo_fotos.py
+      - name: Guardar
+        run: |
+          git config user.name "catalogo-bot"
+          git config user.email "catalogo-bot@users.noreply.github.com"
+          git add assets/d
+          git diff --cached --quiet || git commit -q -m "Fotos copiadas al sitio: $(date -u +%Y-%m-%d)"
+          for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 5; done
