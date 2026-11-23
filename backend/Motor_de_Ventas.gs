@@ -16,11 +16,14 @@ const ID_HOJA = '12gaQxik4JuXN6cXUf7AwoQEWBSoEMwf6Drj8sAywh-s';
 const BASE_MAESTRA = '1_XtTBAGbIJFcbP6tLNTU4cADwF1eKN59WaX1olJkvOE'; // órdenes web (si tu cuenta tiene acceso)
 const CATALOGO_URL = 'https://daviddiazosorio73-debug.github.io/catalogo/';
 const CATALOGO_API = 'https://script.google.com/macros/s/AKfycby_n087GKueloyFmtqNp7u-LcsRmKk9m3fZ70deCms2PhRr8vL4qsZL0oG9Jw5xOUs9/exec';
+const PANEL_URL = CATALOGO_URL + 'panel/'; // ícono y acceso directo del Panel
 const DIAS_PARA_SEGUIMIENTO = 3;
 const ZONA = 'America/Lima';
 const DIAS_ES = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
 function hoja_() { return SpreadsheetApp.openById(ID_HOJA); }
+/** Correo para los avisos: Config «Correo de avisos» o la cuenta donde está instalado el motor. */
+function correo_() { try { const c = String(cfgMap_(hoja_())['Correo de avisos'] || '').trim(); if (/@/.test(c)) return c; } catch (e) { /* */ } return Session.getEffectiveUser().getEmail(); }
 function diaSemana_() { return Number(Utilities.formatDate(new Date(), ZONA, 'u')); } // 1 = lunes … 7 = domingo
 function hoyCero_() { const h = new Date(); h.setHours(0, 0, 0, 0); return h; }
 function cfgMap_(ss) {
@@ -356,25 +359,25 @@ function resumenDiario(forzar) {
   const p = panelDatos();
   const td = 'style="padding:6px;border-bottom:1px solid #ddd;vertical-align:top"';
   const filas = p.cola.map(c => '<tr><td ' + td + '>' + c.motivo + '</td><td ' + td + '><b>' + c.razon + '</b><br><span style="color:#666">' + c.zona + ' · puntaje ' + c.puntaje + '</span></td></tr>').join('');
-  const url = ScriptApp.getService().getUrl();
+  const url = PANEL_URL;
   const html = '<div style="font-family:Arial;font-size:14px"><h2 style="color:#002172">Tu día de ventas · ' + p.cola.length + ' contactos</h2>' +
     '<p>Venta del mes: <b>' + p.kpi.venta + '</b> · Meta: <b>' + p.kpi.meta + '</b> · Avance: <b>' + p.kpi.avance + '</b></p>' +
     (url ? '<p><a href="' + url + '" style="background:#e8264f;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">Abrir mi Panel de ventas</a></p>' : '') +
     '<table style="border-collapse:collapse">' + filas + '</table></div>';
-  MailApp.sendEmail({ to: Session.getEffectiveUser().getEmail(), subject: 'Tu día de ventas · ' + p.cola.length + ' contactos', htmlBody: html });
+  MailApp.sendEmail({ to: correo_(), subject: 'Tu día de ventas · ' + p.cola.length + ' contactos', htmlBody: html });
 }
 
 /** Viernes: revisión de la semana + plan IA de la próxima semana (sin llamadas). */
 function revisionSemanal() {
   const r = panelRevision();
   const li = arr => arr.length ? '<ul>' + arr.map(p => '<li>' + [p.num, p.razon, p.items, 'S/ ' + p.total.toFixed(2)].join(' · ') + ' · <b>' + p.estado + '</b></li>').join('') + '</ul>' : '<p>—</p>';
-  const url = ScriptApp.getService().getUrl();
+  const url = PANEL_URL;
   const html = '<div style="font-family:Arial;font-size:14px"><h2 style="color:#002172">Revisión de la semana</h2>' +
     '<p>Contactos de la semana: <b>' + r.semana.contactos + '</b> · Pedidos: <b>' + r.semana.pedidos + '</b> · Interesados: <b>' + r.semana.interesados + '</b> · Pendientes que pasan al lunes: <b>' + r.semana.pendientes + '</b></p>' +
     '<h3>Pedidos por cerrar (pago, despacho, factura)</h3>' + li(r.abiertos) +
     '<h3>Plan para la próxima semana (IA)</h3><div>' + (r.plan || 'Activa la clave de IA para recibir el plan.').replace(/\n/g, '<br>') + '</div>' +
     (url ? '<p><a href="' + url + '">Abrir mi Panel de ventas</a></p>' : '') + '</div>';
-  MailApp.sendEmail({ to: Session.getEffectiveUser().getEmail(), subject: 'Revisión de la semana · ' + r.abiertos.length + ' pedidos por cerrar', htmlBody: html });
+  MailApp.sendEmail({ to: correo_(), subject: 'Revisión de la semana · ' + r.abiertos.length + ' pedidos por cerrar', htmlBody: html });
 }
 
 // =====================================================================
@@ -383,6 +386,7 @@ function revisionSemanal() {
 function doGet() {
   return HtmlService.createHtmlOutputFromFile('Panel')
     .setTitle('Panel de ventas · Tecno Log IA')
+    .setFaviconUrl(PANEL_URL + 'icon-32.png')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover');
 }
 

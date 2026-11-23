@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Panel de ventas · Tecno Log IA</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#151823">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-32.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Panel ventas">
+<style>
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#151823;color:#fff;font:16px/1.45 system-ui,-apple-system,'Segoe UI',sans-serif;text-align:center}
+.box{width:min(420px,90vw)}img{width:110px;height:110px;border-radius:26px}
+h1{font-size:22px;margin:14px 0 4px}p{color:#aab;margin:6px 0}
+.btn{display:block;width:100%;border:0;border-radius:14px;padding:14px;margin:10px 0;font:600 17px system-ui;cursor:pointer;background:#e8264f;color:#fff;text-decoration:none}
+.btn.g{background:#f2c94c;color:#151823}.btn.o{background:transparent;border:1.5px solid #3a4160;color:#fff}
+input{width:100%;box-sizing:border-box;padding:12px;border-radius:12px;border:1.5px solid #3a4160;background:#1f2333;color:#fff;font-size:15px}
+small{color:#778}
+</style>
+</head>
+<body>
+<div class="box">
+  <img src="icon-512.png" alt="">
+  <h1>Panel de ventas</h1>
+  <p id="msg">Abriendo…</p>
+  <div id="ui"></div>
+  <small>Tecno Log IA · uso interno</small>
+</div>
+<script>
+(function () {
+  var K = 'panel_url', ui = document.getElementById('ui'), msg = document.getElementById('msg');
+  var q = new URLSearchParams(location.search);
+  var url = localStorage.getItem(K) || '';
+  var ok = function (u) { return /^https:\/\/script\.google\.com\/(a\/[^/]+\/)?macros\/s\/[\w-]+\/exec/.test(u); };
+  if (q.get('u') && ok(q.get('u'))) { url = q.get('u'); localStorage.setItem(K, url); history.replaceState(null, '', location.pathname); }
+  var inst = null;
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); inst = e; pintar(); });
+  var standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  function configurar() {
+    msg.textContent = 'Pega una sola vez la URL de tu Panel (Implementar → Gestionar implementaciones → URL de la aplicación web).';
+    ui.innerHTML = '<input id="u" placeholder="https://script.google.com/macros/s/…/exec" value="' + (url || '') + '"><button class="btn g" id="g">Guardar</button>';
+    document.getElementById('g').onclick = function () {
+      var u = document.getElementById('u').value.trim();
+      if (!ok(u)) { msg.textContent = 'Esa URL no es de una aplicación web de Apps Script (debe terminar en /exec).'; return; }
+      localStorage.setItem(K, u); url = u; pintar();
+    };
+  }
+  function pintar() {
+    if (!url) return configurar();
+    msg.textContent = standalone ? 'Abriendo tu panel…' : 'Listo. Instálalo como app o ábrelo.';
+    ui.innerHTML = '<a class="btn" href="' + url + '">Abrir Panel de ventas</a>' +
+      (inst ? '<button class="btn g" id="i">⬇ Instalar en este equipo</button>' : (!standalone ? '<p><small>Para el ícono: menú del navegador → «Instalar app» o «Agregar a la pantalla de inicio».</small></p>' : '')) +
+      '<button class="btn o" id="c">Cambiar URL</button>';
+    if (inst) document.getElementById('i').onclick = function () { inst.prompt(); inst.userChoice.then(function () { inst = null; pintar(); }); };
+    document.getElementById('c').onclick = configurar;
+    if (standalone || q.get('app')) setTimeout(function () { location.href = url; }, 400);
+  }
+  pintar();
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+})();
+</script>
+</body>
+</html>
