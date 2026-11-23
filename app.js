@@ -1,0 +1,485 @@
+/* Tecno Log IA · Catálogo digital
+ * Datos: API de Google Apps Script (config.js → api) o, si no hay API, data/productos.json.
+ * Vistas: inicio (ofertas, marcas, categorías), resultados, producto (uno a la vez),
+ * presentación (play), carrito y orden de compra con firma.
+ */
+(() => {
+  'use strict';
+  const CFG = window.CATALOGO_CONFIG || {};
+  const $ = (s, el = document) => el.querySelector(s);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const money = n => 'S/ ' + Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const normCod = s => String(s || '').toUpperCase().replace(/[\s\-_.\/]/g, '');
+  const store = {
+    get: (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
+    set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* sin almacenamiento */ } },
+  };
+
+  const S = {
+    config: {}, productos: [], porId: {}, marcas: [], categorias: [],
+    cart: store.get('tli_cart', {}),   // {id: cantidad}
+    lista: [],                         // lista actual (para siguiente/anterior y presentación)
+    filtro: { q: '', marca: '', cat: '' },
+    oferta: '',
+  };
+  const params = new URLSearchParams(location.search);
+  if (params.get('d')) sessionStorage.setItem('tli_origen', params.get('d'));
+  const origen = () => sessionStorage.getItem('tli_origen') || 'directo';
+
+  // ---------- Carga ----------
+  async function cargar() {
+    let data = null;
+    if (CFG.api) {
+      try {
+        const r = await fetch(CFG.api + '?accion=productos', { cache: 'no-store' });
+        data = await r.json();
+        if (!data.ok) data = null;
+        else store.set('tli_cache', data);
+      } catch { data = null; }
+    }
+    if (!data) data = store.get('tli_cache', null);
+    if (!data || !CFG.api) {
+      try { data = await (await fetch('data/productos.json', { cache: 'no-cache' })).json(); } catch { /* sin copia local */ }
+    }
+    if (!data) { $('#main').innerHTML = '<div class="vacio">No se pudo cargar el catálogo. Revisa tu conexión.</div>'; return; }
+    S.config = data.config || {};
+    S.productos = (data.productos || []).filter(p => p.estado !== 'Oculto');
+    S.productos.forEach(p => {
+      p._t = norm([p.codigo, p.nombre, p.marca, p.categoria, p.familia, p.lista].join(' '));
+      p._c = normCod(p.codigo);
+      S.porId[p.id] = p;
+    });
+    const cuenta = (key) => {
+      const m = {};
+      S.productos.forEach(p => { const k = p[key] || 'Otras'; m[k] = (m[k] || 0) + 1; });
+      return Object.entries(m).sort((a, b) => b[1] - a[1]);
+    };
+    S.marcas = cuenta('marca');
+    S.categorias = cuenta('categoria');
+    if (S.config.vigencia) $('#vig').textContent = '· PVP con IGV · ' + S.config.vigencia;
+    $('#wa').href = 'https://wa.me/' + (S.config.whatsapp || '51928146619') + '?text=' + encodeURIComponent('Hola Tecno Log IA, tengo una consulta del catálogo digital.');
+    // limpiar carrito de productos que ya no existen
+    Object.keys(S.cart).forEach(id => { if (!S.porId[id]) delete S.cart[id]; });
+    guardarCart();
+    router();
+  }
+
+  // ---------- Utilidades de producto ----------
+  const fotosDe = p => [p.foto, ...(p.fotos || [])].filter(Boolean);
+  const imgHTML = (p, cls = '') => {
+    const f = fotosDe(p)[0];
+    return f
+      ? `<img class="${cls}" src="${esc(f)}" alt="${esc(p.nombre)}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'noimg',innerHTML:'<div><img src=&quot;assets/icon-192.png&quot; alt=&quot;&quot;>Foto pronto</div>'}))">`
+      : `<div class="noimg"><div><img src="assets/icon-192.png" alt="">Foto pronto</div></div>`;
+  };
+  const badges = p => {
+    const b = [];
+    if (p.oferta) b.push(`<span class="badge of">Oferta ${esc(p.oferta.toLowerCase() === 'día' ? 'del día' : 'de la ' + p.oferta.toLowerCase()).replace('de la mes', 'del mes')}</span>`);
+    if (p.nuevo) b.push('<span class="badge nv">Nuevo</span>');
+    if (p.estado === 'Próximo ingreso') b.push('<span class="badge pi">Próximo ingreso</span>');
+    if (p.estado === 'Agotado') b.push('<span class="badge ag">Agotado</span>');
+    return `<div class="badges">${b.join('')}</div>`;
+  };
+  const tarjeta = p => `
+    <article class="card" data-id="${esc(p.id)}">
+      <div class="ph">${imgHTML(p)}${badges(p)}${p.estado !== 'Agotado' ? `<button class="add" data-add="${esc(p.id)}" aria-label="Agregar al carrito">+</button>` : ''}</div>
+      <div class="info"><span class="cod">${esc(p.marca ? p.marca + ' · ' : '')}${esc(p.codigo)}</span>
+      <span class="nom">${esc(p.nombre)}</span>
+      <span class="pre">${money(p.pvp)} <small>inc. IGV</small></span></div>
+    </article>`;
+
+  // ---------- Búsqueda ----------
+  function buscar() {
+    const { q, marca, cat } = S.filtro;
+    const nq = norm(q).trim(), cq = normCod(q);
+    const palabras = nq.split(/\s+/).filter(Boolean);
+    let r = S.productos.filter(p =>
+      (!marca || (p.marca || 'Otras') === marca) &&
+      (!cat || (p.categoria || 'Otras') === cat) &&
+      (!palabras.length || palabras.every(w => p._t.includes(w)) || (cq.length >= 3 && p._c.includes(cq))));
+    if (cq.length >= 3) r.sort((a, b) => (b._c === cq) - (a._c === cq) || (b._c.startsWith(cq)) - (a._c.startsWith(cq)));
+    // disponibles primero
+    const rank = p => (p.estado === 'Activo' ? 0 : p.estado === 'Próximo ingreso' ? 1 : 2);
+    r = r.map((p, i) => [p, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(x => x[0]);
+    return r;
+  }
+
+  // ---------- Vistas ----------
+  function router() {
+    const id = new URLSearchParams(location.search).get('p');
+    const h = location.hash.slice(1);
+    const hp = new URLSearchParams(h);
+    S.filtro = { q: hp.get('q') || '', marca: hp.get('m') || '', cat: hp.get('c') || '' };
+    $('#q').value = S.filtro.q;
+    if (S.filtro.q || S.filtro.marca || S.filtro.cat) vistaResultados(); else vistaInicio();
+    if (id && S.porId[id]) abrirProducto(id);
+  }
+
+  function irA(f) {
+    const p = new URLSearchParams();
+    if (f.q) p.set('q', f.q); if (f.m) p.set('m', f.m); if (f.c) p.set('c', f.c);
+    location.hash = p.toString();
+  }
+
+  function vistaInicio() {
+    const ofertas = { 'Día': [], 'Semana': [], 'Mes': [] };
+    S.productos.forEach(p => { if (ofertas[p.oferta]) ofertas[p.oferta].push(p); });
+    Object.values(ofertas).forEach(l => l.sort((a, b) => (a.orden || 999) - (b.orden || 999)));
+    const tabs = Object.keys(ofertas).filter(k => ofertas[k].length);
+    if (!S.oferta || !ofertas[S.oferta] || !ofertas[S.oferta].length) S.oferta = tabs[0] || '';
+    const lista = S.oferta ? ofertas[S.oferta] : [];
+    const nuevos = S.productos.filter(p => p.nuevo).slice(0, 24);
+    $('#main').innerHTML = `
+      ${tabs.length ? `<section class="hero">
+        <h2>🔥 Ofertas</h2>
+        <div class="tabs">${tabs.map(t => `<button class="pill ${t === S.oferta ? 'on' : ''}" data-of="${t}">${t === 'Día' ? 'Del día' : t === 'Semana' ? 'De la semana' : 'Del mes'} <b>${ofertas[t].length}</b></button>`).join('')}
+          <button class="pill" data-play="ofertas">▶ Ver en presentación</button></div>
+        <div class="carrusel">${lista.map(tarjeta).join('')}</div></section>` : ''}
+      <h2>Marcas</h2>
+      <div class="row">${S.marcas.map(([m, n]) => `<button class="pill" data-m="${esc(m)}">${esc(m)} <b>${n}</b></button>`).join('')}</div>
+      <h2>Categorías <small>${S.categorias.length}</small></h2>
+      <div class="row" style="flex-wrap:wrap">${S.categorias.map(([c, n]) => `<button class="pill" data-c="${esc(c)}">${esc(c)} <b>${n}</b></button>`).join('')}</div>
+      ${nuevos.length ? `<h2>Novedades</h2><div class="grid">${nuevos.map(tarjeta).join('')}</div>` : ''}
+      <footer class="pie">${esc(S.config.nombre || 'Tecno Log IA')} · ${S.productos.length} productos · Solo distribuidores y mayoristas · PVP con IGV</footer>`;
+    S.lista = lista.length ? lista : S.productos;
+  }
+
+  let paginaActual = 1;
+  function vistaResultados() {
+    const r = buscar();
+    S.lista = r;
+    paginaActual = 1;
+    const { q, marca, cat } = S.filtro;
+    const chips = [];
+    if (marca) chips.push(`<button class="pill on" data-quitar="m">${esc(marca)} ✕</button>`);
+    if (cat) chips.push(`<button class="pill on" data-quitar="c">${esc(cat)} ✕</button>`);
+    if (q) chips.push(`<button class="pill on" data-quitar="q">“${esc(q)}” ✕</button>`);
+    $('#main').innerHTML = `
+      <div class="row">${chips.join('')}<button class="pill" data-inicio>← Inicio</button>
+        ${r.length ? '<button class="pill" data-play="lista">▶ Presentación</button>' : ''}</div>
+      <h2>${r.length} producto${r.length === 1 ? '' : 's'}</h2>
+      ${r.length ? `<div class="grid" id="grid"></div><div style="text-align:center;padding:20px"><button class="btn ghost" id="mas" hidden>Ver más</button></div>`
+        : `<div class="vacio">No encontramos productos con esa búsqueda.<br><br><button class="btn" data-inicio>Ver todo el catálogo</button></div>`}`;
+    pintarPagina();
+  }
+  function pintarPagina() {
+    const g = $('#grid'); if (!g) return;
+    const N = 48, hasta = paginaActual * N;
+    g.innerHTML = S.lista.slice(0, hasta).map(tarjeta).join('');
+    $('#mas').hidden = S.lista.length <= hasta;
+  }
+
+  // ---------- Producto (uno a la vez) ----------
+  let pvEstado = { id: null, i: 0, zoom: false };
+  function abrirProducto(id, idx) {
+    const p = S.porId[id]; if (!p) return;
+    pvEstado = { id, i: 0, zoom: false };
+    const media = fotosDe(p).map(f => ({ t: 'img', src: f }));
+    const vid = driveId(p.video);
+    if (vid) media.push({ t: 'vid', src: 'https://drive.google.com/file/d/' + vid + '/preview' });
+    const variantes = S.productos.filter(x => x.codigo === p.codigo && x.id !== p.id);
+    const pos = S.lista.findIndex(x => x.id === id);
+    const enCarrito = S.cart[id] || 0;
+    const url = location.origin + location.pathname + '?p=' + encodeURIComponent(id);
+    $('#pv').innerHTML = `<div class="pvbox">
+      <button class="pvclose" data-cerrar aria-label="Cerrar">✕</button>
+      <div class="gal">
+        <div class="stage" id="stage"></div>
+        ${media.length > 1 ? `<div class="thumbs">${media.map((m, i) => m.t === 'img'
+          ? `<button data-th="${i}" class="${i ? '' : 'on'}"><img src="${esc(m.src)}" alt=""></button>`
+          : `<button data-th="${i}" class="vid">▶</button>`).join('')}</div>` : ''}
+      </div>
+      <div class="det">
+        <span class="marca">${esc(p.marca || 'Tecno Log IA')}</span>
+        <h1>${esc(p.nombre)}</h1>
+        <div class="meta">Código <b>${esc(p.codigo)}</b> · ${esc(p.categoria)}${p.familia ? ' · ' + esc(p.familia) : ''}</div>
+        <div>${badges(p).replace('class="badges"', 'class="row"')}</div>
+        <div class="precio">${money(p.pvp)}<small>Precio de venta al público (PVP) · incluye IGV</small></div>
+        ${variantes.length ? `<div><b>Otras presentaciones</b><div class="var">${variantes.map(v => `<button class="pill" data-ver="${esc(v.id)}">${esc(v.nombre.replace(p.nombre, '').trim() || v.id)}</button>`).join('')}</div></div>` : ''}
+        ${p.estado === 'Agotado' ? `<p class="err"><b>Agotado por ahora.</b> Escríbenos y te avisamos cuando llegue.</p>
+          <div class="acc"><a class="btn green" target="_blank" rel="noopener" href="https://wa.me/${esc(S.config.whatsapp || '51928146619')}?text=${encodeURIComponent('Hola, quiero que me avisen cuando llegue: ' + p.codigo + ' · ' + p.nombre)}">Avísame por WhatsApp</a></div>`
+        : `<div class="acc"><div class="qty"><button data-q="-1">−</button><input id="pvq" type="number" min="1" value="${enCarrito || 1}"><button data-q="1">+</button></div>
+          <button class="btn red" data-addq="${esc(p.id)}">${enCarrito ? 'Actualizar carrito' : 'Agregar al carrito'}</button></div>
+          ${p.estado === 'Próximo ingreso' ? '<p class="meta">Producto en camino: puedes pedirlo y se despacha a su llegada.</p>' : ''}`}
+        <div class="docs">
+          ${p.ficha ? `<a class="btn ghost" target="_blank" rel="noopener" href="${esc(p.ficha)}">📄 Ficha técnica</a>` : ''}
+          ${p.manual ? `<a class="btn ghost" target="_blank" rel="noopener" href="${esc(p.manual)}">📘 Manual</a>` : ''}
+          <a class="btn ghost" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(p.nombre + ' · ' + url)}">Compartir</a>
+        </div>
+        <div class="pvbar">
+          <button class="btn ghost" data-nav="-1" ${pos > 0 ? '' : 'disabled'}>← Anterior</button>
+          <button class="btn ghost" data-nav="1" ${pos >= 0 && pos < S.lista.length - 1 ? '' : 'disabled'}>Siguiente →</button>
+        </div>
+      </div></div>`;
+    $('#pv').hidden = false;
+    document.body.style.overflow = 'hidden';
+    pvEstado.media = media;
+    pintarMedia();
+    history.replaceState(null, '', '?p=' + encodeURIComponent(id) + location.hash);
+  }
+  function pintarMedia() {
+    const m = pvEstado.media, st = $('#stage');
+    if (!st) return;
+    if (!m.length) { st.innerHTML = imgHTML(S.porId[pvEstado.id]); return; }
+    const it = m[pvEstado.i];
+    st.className = 'stage' + (pvEstado.zoom ? ' zoom' : '');
+    st.innerHTML = (it.t === 'img' ? `<img src="${esc(it.src)}" alt="" data-zoom>` : `<iframe src="${esc(it.src)}" allow="autoplay; fullscreen" allowfullscreen></iframe>`)
+      + (m.length > 1 ? '<button class="nav l" data-m="-1">‹</button><button class="nav r" data-m="1">›</button>' : '');
+    document.querySelectorAll('.thumbs button').forEach((b, i) => b.classList.toggle('on', i === pvEstado.i));
+  }
+  function cerrarProducto() {
+    $('#pv').hidden = true; $('#pv').innerHTML = '';
+    document.body.style.overflow = '';
+    history.replaceState(null, '', location.pathname + location.hash);
+  }
+  function driveId(u) {
+    const m = String(u || '').match(/\/d\/([\w-]{20,})|[?&]id=([\w-]{20,})/);
+    return m ? (m[1] || m[2]) : '';
+  }
+
+  // ---------- Presentación ----------
+  let playT = null, playI = 0, playL = [], pausado = false;
+  function abrirPlay(lista) {
+    playL = lista.filter(p => p.estado !== 'Agotado');
+    if (!playL.length) return;
+    playI = 0; pausado = false;
+    $('#play').hidden = false; document.body.style.overflow = 'hidden';
+    pintarPlay();
+  }
+  function pintarPlay() {
+    clearTimeout(playT);
+    const p = playL[playI];
+    $('#play').innerHTML = `
+      <div class="bar"><i id="pbar"></i></div>
+      <div class="ptop"><img src="assets/logo-wordmark.png" alt="Tecno Log IA"><span>${playI + 1} / ${playL.length}</span></div>
+      <div class="pstage">${fotosDe(p)[0] ? `<img src="${esc(fotosDe(p)[0])}" alt="">` : `<div class="noimg" style="width:min(60vh,80vw);height:min(60vh,80vw);border-radius:18px"><div><img src="assets/icon-192.png" alt="">${esc(p.codigo)}</div></div>`}</div>
+      <div class="pinfo"><div>${esc(p.marca || '')} · ${esc(p.codigo)}</div><h3>${esc(p.nombre)}</h3><div class="pp">${money(p.pvp)}</div></div>
+      <div class="pctl">
+        <button class="btn ghost" data-pl="-1">‹ Anterior</button>
+        <button class="btn" data-pl="pausa">${pausado ? '▶ Seguir' : '❚❚ Pausa'}</button>
+        <button class="btn ghost" data-pl="1">Siguiente ›</button>
+        <button class="btn red" data-add="${esc(p.id)}">+ Agregar</button>
+        <button class="btn gold" data-pl="ver">Ver detalle</button>
+        <button class="btn ghost" data-pl="cerrar">✕ Salir</button>
+      </div>`;
+    const bar = $('#pbar');
+    if (!pausado) {
+      bar.animate([{ width: '0%' }, { width: '100%' }], { duration: 5000, fill: 'forwards' });
+      playT = setTimeout(() => { playI = (playI + 1) % playL.length; pintarPlay(); }, 5000);
+    }
+  }
+  function cerrarPlay() { clearTimeout(playT); $('#play').hidden = true; $('#play').innerHTML = ''; document.body.style.overflow = ''; }
+
+  // ---------- Carrito ----------
+  function guardarCart() {
+    store.set('tli_cart', S.cart);
+    const n = Object.values(S.cart).reduce((a, b) => a + b, 0);
+    $('#cartCount').textContent = n;
+  }
+  function agregar(id, cant, reemplazar) {
+    const p = S.porId[id]; if (!p || p.estado === 'Agotado') return;
+    cant = Math.max(1, Math.min(999, parseInt(cant, 10) || 1));
+    S.cart[id] = reemplazar ? cant : (S.cart[id] || 0) + cant;
+    guardarCart();
+    toast('✓ ' + p.codigo + ' en el carrito (' + S.cart[id] + ')');
+  }
+  function totalCart() {
+    return Object.entries(S.cart).reduce((t, [id, q]) => t + (S.porId[id] ? S.porId[id].pvp * q : 0), 0);
+  }
+  function abrirCart() {
+    const ids = Object.keys(S.cart);
+    $('#cart').innerHTML = `
+      <header><b>Tu pedido (${ids.length})</b><button data-ccerrar aria-label="Cerrar">✕</button></header>
+      <div class="items">${ids.length ? ids.map(id => {
+        const p = S.porId[id];
+        return `<div class="it">${imgHTML(p)}<div><div class="cod">${esc(p.codigo)}</div><div class="nom" style="font-size:13px">${esc(p.nombre)}</div>
+          <div><b>${money(p.pvp * S.cart[id])}</b> <button class="x" data-del="${esc(id)}">Quitar</button></div></div>
+          <div class="qty"><button data-cq="${esc(id)}" data-d="-1">−</button><input value="${S.cart[id]}" data-ci="${esc(id)}" type="number" min="1"><button data-cq="${esc(id)}" data-d="1">+</button></div></div>`;
+      }).join('') : '<div class="vacio">Tu carrito está vacío.<br>Toca <b>+</b> en cualquier producto para agregarlo.</div>'}</div>
+      <div class="sum"><div class="t"><span>Total</span><span>${money(totalCart())}</span></div>
+        <small class="meta">PVP · incluye IGV · sujeto a stock</small>
+        <button class="btn red" data-orden ${ids.length ? '' : 'disabled'}>Generar orden de compra</button>
+        <button class="btn ghost" data-ccerrar>Seguir comprando</button></div>`;
+    $('#cart').hidden = false;
+  }
+  function cerrarCart() { $('#cart').hidden = true; }
+
+  // ---------- Orden de compra ----------
+  let firma = { ctx: null, dibujo: false, vacia: true };
+  function abrirOrden() {
+    cerrarCart();
+    const c = store.get('tli_cliente', {});
+    const ids = Object.keys(S.cart);
+    $('#co').innerHTML = `<div class="cobox">
+      <button class="pvclose" data-cocerrar aria-label="Cerrar">✕</button>
+      <h1 style="margin:0 0 4px">Orden de compra</h1>
+      <p class="meta" style="margin:0 0 14px">Solo distribuidores y mayoristas · Recibirás la orden en tu correo.</p>
+      <div class="resumen">${ids.map(id => `<div><span>${S.cart[id]} × ${esc(S.porId[id].codigo)} · ${esc(S.porId[id].nombre)}</span><b>${money(S.porId[id].pvp * S.cart[id])}</b></div>`).join('')}
+        <div><span><b>TOTAL (inc. IGV)</b></span><b>${money(totalCart())}</b></div></div>
+      <h2>Tus datos</h2>
+      <form class="form" id="fo" novalidate>
+        <label>RUC *<input name="ruc" inputmode="numeric" maxlength="11" required value="${esc(c.ruc || '')}" placeholder="20xxxxxxxxx"><span id="rucmsg" class="meta"></span></label>
+        <label>Razón social *<input name="razon" required value="${esc(c.razon || '')}"></label>
+        <label>Persona de contacto *<input name="contacto" required value="${esc(c.contacto || '')}"></label>
+        <label>Celular / WhatsApp *<input name="celular" inputmode="tel" required value="${esc(c.celular || '')}"></label>
+        <label class="full">Correo (aquí llegará tu orden) *<input name="email" type="email" required value="${esc(c.email || '')}"></label>
+        <label class="full">Dirección de entrega *<input name="direccion" required value="${esc(c.direccion || '')}"></label>
+        <label>Ciudad / distrito *<input name="ciudad" required value="${esc(c.ciudad || '')}"></label>
+        <label>Notas (opcional)<input name="notas" placeholder="Horario, referencia, forma de pago…"></label>
+        <label class="full">Firma de conformidad * <canvas class="firma" id="firma"></canvas>
+          <span><button type="button" class="pill" id="limpiar">Borrar firma</button></span></label>
+        <label class="full" style="flex-direction:row;gap:10px;align-items:flex-start;color:var(--ink);font-weight:500">
+          <input type="checkbox" name="acepto" style="width:22px;height:22px" required>
+          Confirmo mi pedido. Los precios incluyen IGV y están sujetos a stock y a la confirmación de Tecno Log IA.</label>
+        <div class="full"><button class="btn red" style="width:100%;font-size:18px" id="enviar">Enviar orden de compra</button>
+        <p id="comsg" class="meta"></p></div>
+      </form></div>`;
+    $('#co').hidden = false; document.body.style.overflow = 'hidden';
+    prepararFirma();
+    const ruc = $('#fo [name=ruc]');
+    ruc.addEventListener('input', () => { ruc.value = ruc.value.replace(/\D/g, ''); if (ruc.value.length === 11) consultarRuc(ruc.value); });
+    $('#limpiar').onclick = () => { limpiarFirma(); };
+    $('#fo').onsubmit = enviarOrden;
+  }
+  async function consultarRuc(ruc) {
+    const msg = $('#rucmsg');
+    if (!/^(10|15|17|20)\d{9}$/.test(ruc)) { msg.textContent = 'Revisa el RUC (11 dígitos).'; msg.className = 'err'; return; }
+    if (!CFG.api) { msg.textContent = ''; return; }
+    msg.textContent = 'Buscando…'; msg.className = 'meta';
+    try {
+      const r = await (await fetch(CFG.api + '?accion=ruc&ruc=' + ruc)).json();
+      const f = $('#fo');
+      if (r.ok && r.encontrado) {
+        if (!f.razon.value) f.razon.value = r.razon || '';
+        if (!f.direccion.value) f.direccion.value = r.direccion || '';
+        if (!f.ciudad.value) f.ciudad.value = r.ciudad || '';
+        msg.textContent = '✓ Cliente registrado'; msg.className = 'ok';
+      } else { msg.textContent = 'Cliente nuevo: completa tus datos.'; msg.className = 'meta'; }
+    } catch { msg.textContent = ''; }
+  }
+  function prepararFirma() {
+    const c = $('#firma');
+    const r = c.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    c.width = r.width * dpr; c.height = r.height * dpr;
+    const ctx = c.getContext('2d'); ctx.scale(dpr, dpr);
+    ctx.lineWidth = 2.4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#151823';
+    firma = { ctx, dibujo: false, vacia: true };
+    const pos = e => { const b = c.getBoundingClientRect(); return [e.clientX - b.left, e.clientY - b.top]; };
+    c.onpointerdown = e => { c.setPointerCapture(e.pointerId); firma.dibujo = true; const [x, y] = pos(e); ctx.beginPath(); ctx.moveTo(x, y); };
+    c.onpointermove = e => { if (!firma.dibujo) return; const [x, y] = pos(e); ctx.lineTo(x, y); ctx.stroke(); firma.vacia = false; };
+    c.onpointerup = c.onpointercancel = () => { firma.dibujo = false; };
+  }
+  function limpiarFirma() { const c = $('#firma'); firma.ctx.clearRect(0, 0, c.width, c.height); firma.vacia = true; }
+  async function enviarOrden(ev) {
+    ev.preventDefault();
+    const f = $('#fo'), msg = $('#comsg');
+    const d = Object.fromEntries(new FormData(f).entries());
+    const faltan = ['ruc', 'razon', 'contacto', 'celular', 'email', 'direccion', 'ciudad'].filter(k => !String(d[k] || '').trim());
+    if (faltan.length) { msg.textContent = 'Completa los campos marcados con *.'; msg.className = 'err'; return; }
+    if (!/^(10|15|17|20)\d{9}$/.test(d.ruc)) { msg.textContent = 'El RUC debe tener 11 dígitos.'; msg.className = 'err'; return; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email)) { msg.textContent = 'Revisa tu correo.'; msg.className = 'err'; return; }
+    if (firma.vacia) { msg.textContent = 'Firma en el recuadro para confirmar.'; msg.className = 'err'; return; }
+    if (!d.acepto) { msg.textContent = 'Marca la casilla de confirmación.'; msg.className = 'err'; return; }
+    store.set('tli_cliente', { ruc: d.ruc, razon: d.razon, contacto: d.contacto, celular: d.celular, email: d.email, direccion: d.direccion, ciudad: d.ciudad });
+    if (!CFG.api) { msg.textContent = 'La app aún no está conectada al sistema de órdenes. Escríbenos por WhatsApp.'; msg.className = 'err'; return; }
+    const btn = $('#enviar'); btn.disabled = true; btn.textContent = 'Enviando…';
+    const payload = {
+      accion: 'orden', ...d, origen: origen(),
+      items: Object.entries(S.cart).map(([id, cantidad]) => ({ id, cantidad })),
+      firma: $('#firma').toDataURL('image/png'),
+    };
+    try {
+      const r = await (await fetch(CFG.api, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) })).json();
+      if (!r.ok) throw new Error(r.error || 'Error');
+      S.cart = {}; guardarCart();
+      $('#co').innerHTML = `<div class="cobox" style="text-align:center;padding-top:60px">
+        <div style="font-size:64px">✅</div><h1>¡Orden enviada!</h1>
+        <p style="font-size:18px">Tu orden <b>N° ${esc(r.numero)}</b> por <b>${money(r.total)}</b> llegó a <b>${esc(d.email)}</b>.</p>
+        <p class="meta">Un asesor de Tecno Log IA te confirmará stock, pago y despacho.</p>
+        <p><a class="btn green" target="_blank" rel="noopener" href="https://wa.me/${esc(S.config.whatsapp || '51928146619')}?text=${encodeURIComponent('Hola, acabo de enviar la orden ' + r.numero + ' desde el catálogo digital.')}">Avisar por WhatsApp</a></p>
+        <p><button class="btn ghost" data-cocerrar>Volver al catálogo</button></p></div>`;
+    } catch (e) {
+      btn.disabled = false; btn.textContent = 'Enviar orden de compra';
+      msg.textContent = 'No se pudo enviar (' + e.message + '). Intenta de nuevo o escríbenos por WhatsApp.'; msg.className = 'err';
+    }
+  }
+  function cerrarOrden() { $('#co').hidden = true; $('#co').innerHTML = ''; document.body.style.overflow = ''; }
+
+  // ---------- Aviso ----------
+  let toastT;
+  function toast(t) { const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => el.hidden = true, 1800); }
+
+  // ---------- Eventos ----------
+  let qT;
+  $('#q').addEventListener('input', e => {
+    clearTimeout(qT);
+    qT = setTimeout(() => irA({ q: e.target.value.trim(), m: S.filtro.marca, c: S.filtro.cat }), 250);
+  });
+  $('#btnCart').onclick = abrirCart;
+  window.addEventListener('hashchange', router);
+
+  document.addEventListener('click', e => {
+    const t = e.target.closest('button,a') || e.target.closest('article,[data-zoom]');
+    if (!t) return;
+    const ds = t.dataset;
+    if (ds.add) { e.stopPropagation(); agregar(ds.add, 1); return; }
+    if (t.matches('article.card')) { abrirProducto(t.dataset.id); return; }
+    if (ds.of) { S.oferta = ds.of; vistaInicio(); return; }
+    if (ds.m && !t.closest('#pv')) { irA({ m: ds.m }); return; }
+    if (ds.c) { irA({ c: ds.c }); return; }
+    if ('inicio' in ds) { irA({}); return; }
+    if (ds.quitar) { const f = { q: S.filtro.q, m: S.filtro.marca, c: S.filtro.cat }; f[ds.quitar] = ''; irA(f); return; }
+    if (ds.play) { abrirPlay(ds.play === 'lista' ? S.lista : S.lista); return; }
+    if (t.id === 'mas') { paginaActual++; pintarPagina(); return; }
+    // producto
+    if ('cerrar' in ds) { cerrarProducto(); return; }
+    if (ds.th) { pvEstado.i = +ds.th; pvEstado.zoom = false; pintarMedia(); return; }
+    if (ds.m && t.closest('#pv')) { const n = pvEstado.media.length; pvEstado.i = (pvEstado.i + +ds.m + n) % n; pvEstado.zoom = false; pintarMedia(); return; }
+    if ('zoom' in ds) { pvEstado.zoom = !pvEstado.zoom; pintarMedia(); return; }
+    if (ds.q) { const i = $('#pvq'); i.value = Math.max(1, (+i.value || 1) + +ds.q); return; }
+    if (ds.addq) { agregar(ds.addq, $('#pvq').value, true); abrirProducto(ds.addq); return; }
+    if (ds.ver) { abrirProducto(ds.ver); return; }
+    if (ds.nav) { const pos = S.lista.findIndex(x => x.id === pvEstado.id) + +ds.nav; if (S.lista[pos]) abrirProducto(S.lista[pos].id); return; }
+    // presentación
+    if (ds.pl) {
+      if (ds.pl === 'cerrar') cerrarPlay();
+      else if (ds.pl === 'pausa') { pausado = !pausado; pintarPlay(); }
+      else if (ds.pl === 'ver') { const id = playL[playI].id; pausado = true; clearTimeout(playT); cerrarPlay(); abrirProducto(id); }
+      else { playI = (playI + +ds.pl + playL.length) % playL.length; pintarPlay(); }
+      return;
+    }
+    // carrito
+    if ('ccerrar' in ds) { cerrarCart(); return; }
+    if (ds.del) { delete S.cart[ds.del]; guardarCart(); abrirCart(); return; }
+    if (ds.cq) { S.cart[ds.cq] = Math.max(1, (S.cart[ds.cq] || 1) + +ds.d); guardarCart(); abrirCart(); return; }
+    if ('orden' in ds) { abrirOrden(); return; }
+    if ('cocerrar' in ds) { cerrarOrden(); return; }
+  });
+  document.addEventListener('change', e => {
+    const id = e.target.dataset && e.target.dataset.ci;
+    if (id) { S.cart[id] = Math.max(1, parseInt(e.target.value, 10) || 1); guardarCart(); abrirCart(); }
+  });
+  document.addEventListener('keydown', e => {
+    if (!$('#play').hidden) { if (e.key === 'Escape') cerrarPlay(); if (e.key === 'ArrowRight') { playI = (playI + 1) % playL.length; pintarPlay(); } if (e.key === 'ArrowLeft') { playI = (playI - 1 + playL.length) % playL.length; pintarPlay(); } return; }
+    if (!$('#pv').hidden) {
+      if (e.key === 'Escape') cerrarProducto();
+      if (e.key === 'ArrowRight' && pvEstado.media.length > 1) { pvEstado.i = (pvEstado.i + 1) % pvEstado.media.length; pintarMedia(); }
+      if (e.key === 'ArrowLeft' && pvEstado.media.length > 1) { pvEstado.i = (pvEstado.i - 1 + pvEstado.media.length) % pvEstado.media.length; pintarMedia(); }
+    }
+    if (e.key === 'Escape') { cerrarCart(); }
+  });
+  // deslizar en la galería (celular)
+  let x0 = null;
+  document.addEventListener('touchstart', e => { if (e.target.closest('#stage')) x0 = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', e => {
+    if (x0 == null) return;
+    const dx = e.changedTouches[0].clientX - x0; x0 = null;
+    if (Math.abs(dx) > 50 && pvEstado.media && pvEstado.media.length > 1) {
+      const n = pvEstado.media.length; pvEstado.i = (pvEstado.i + (dx < 0 ? 1 : -1) + n) % n; pvEstado.zoom = false; pintarMedia();
+    }
+  });
+
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  cargar();
+})();
