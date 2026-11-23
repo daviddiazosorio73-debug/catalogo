@@ -26,6 +26,45 @@
   const params = new URLSearchParams(location.search);
   if (params.get('d')) sessionStorage.setItem('tli_origen', params.get('d'));
   const origen = () => sessionStorage.getItem('tli_origen') || 'directo';
+  // Sesión anónima del equipo (para métricas y carritos; no guarda datos personales)
+  let SES = store.get('tli_ses', '');
+  if (!SES) { SES = Date.now().toString(36) + Math.random().toString(36).slice(2, 8); store.set('tli_ses', SES); }
+  const cliente = () => store.get('tli_cliente', {});
+
+  // ---------- Métricas (búsquedas, vistas, agregados) ----------
+  let colaEv = [];
+  function track(tipo, dato, n) {
+    if (!CFG.api) return;
+    colaEv.push({ t: Date.now(), tipo, dato: String(dato || '').slice(0, 120), n });
+    if (colaEv.length >= 20) enviarEventos();
+  }
+  function enviarEventos() {
+    if (!colaEv.length || !CFG.api) return;
+    const body = JSON.stringify({ accion: 'eventos', sesion: SES, ruc: cliente().ruc || '', origen: origen(), eventos: colaEv.splice(0, 50) });
+    try {
+      if (!navigator.sendBeacon || !navigator.sendBeacon(CFG.api, new Blob([body], { type: 'text/plain;charset=UTF-8' })))
+        fetch(CFG.api, { method: 'POST', mode: 'no-cors', keepalive: true, headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body });
+    } catch { /* sin conexión */ }
+  }
+  setInterval(enviarEventos, 15000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') { enviarEventos(); sincronizarCarrito(true); } });
+
+  // ---------- Carrito en la nube (solo si el cliente ya se identificó con su RUC) ----------
+  let syncT = null, ultimoSync = '';
+  function sincronizarCarrito(ya) {
+    clearTimeout(syncT);
+    const c = cliente();
+    if (!CFG.api || !/^(10|15|17|20)\d{9}$/.test(c.ruc || '')) return;
+    const items = Object.entries(S.cart).map(([id, cantidad]) => ({ id, cantidad }));
+    const firma = JSON.stringify(items);
+    if (!items.length || firma === ultimoSync) return;
+    const enviar = () => {
+      ultimoSync = firma;
+      const body = JSON.stringify({ accion: 'carrito', sesion: SES, ruc: c.ruc, razon: c.razon || '', celular: c.celular || '', origen: origen(), items });
+      try { fetch(CFG.api, { method: 'POST', mode: 'no-cors', keepalive: true, headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body }); } catch { /* sin conexión */ }
+    };
+    if (ya) enviar(); else syncT = setTimeout(enviar, 4000);
+  }
 
   // ---------- Carga ----------
   // Muestra al instante lo guardado en el equipo y actualiza en segundo plano desde la hoja.
@@ -66,6 +105,7 @@
     S.categorias = cuenta('categoria');
     if (S.config.vigencia) $('#vig').textContent = '· PVP con IGV · ' + S.config.vigencia;
     $('#wa').href = 'https://wa.me/' + (S.config.whatsapp || '51928146619') + '?text=' + encodeURIComponent('Hola Tecno Log IA, tengo una consulta del catálogo digital.');
+    mostrarAsesor();
     Object.keys(S.cart).forEach(id => { if (!S.porId[id]) delete S.cart[id]; });
     guardarCart();
     // En el refresco no se interrumpe al usuario si está viendo un producto, el carrito o la orden
@@ -132,13 +172,21 @@
 
   function vistaInicio() {
     const ofertas = { 'Día': [], 'Semana': [], 'Mes': [] };
-    S.productos.forEach(p => { if (ofertas[p.oferta]) ofertas[p.oferta].push(p); });
+    const zona = cliente().zona || '';
+    // Ofertas de toda la red + las de la zona del cliente (si ya se identificó con su RUC)
+    const paraMi = p => !(p.zonas || []).length || (zona && p.zonas.indexOf(zona) >= 0);
+    S.productos.forEach(p => { if (ofertas[p.oferta] && paraMi(p)) ofertas[p.oferta].push(p); });
+    const ult = store.get('tli_ultimo', null);
+    const ultDisp = ult ? ult.items.filter(x => S.porId[x.id] && S.porId[x.id].estado !== 'Agotado') : [];
     Object.values(ofertas).forEach(l => l.sort((a, b) => (a.orden || 999) - (b.orden || 999)));
     const tabs = Object.keys(ofertas).filter(k => ofertas[k].length);
     if (!S.oferta || !ofertas[S.oferta] || !ofertas[S.oferta].length) S.oferta = tabs[0] || '';
     const lista = S.oferta ? ofertas[S.oferta] : [];
     const nuevos = S.productos.filter(p => p.nuevo).slice(0, 24);
     $('#main').innerHTML = `
+      ${ultDisp.length ? `<section class="repetir"><div><b>Tu último pedido</b> · N° ${esc(ult.numero)} · ${esc(ult.fecha)}<br>
+        <span class="meta">${ultDisp.length} producto${ultDisp.length === 1 ? '' : 's'} · ${money(ultDisp.reduce((t, x) => t + S.porId[x.id].pvp * x.cantidad, 0))} a precio de hoy</span></div>
+        <button class="btn red" data-repetir>↻ Volver a pedir</button></section>` : ''}
       ${tabs.length ? `<section class="hero">
         <h2>🔥 Ofertas</h2>
         <div class="tabs">${tabs.map(t => `<button class="pill ${t === S.oferta ? 'on' : ''}" data-of="${t}">${t === 'Día' ? 'Del día' : t === 'Semana' ? 'De la semana' : 'Del mes'} <b>${ofertas[t].length}</b></button>`).join('')}
@@ -154,9 +202,12 @@
   }
 
   let paginaActual = 1;
+  let ultimaBusq = '';
   function vistaResultados() {
     const r = buscar();
     S.lista = r;
+    const qq = norm(S.filtro.q).trim();
+    if (qq.length >= 2 && qq !== ultimaBusq) { ultimaBusq = qq; track(r.length ? 'busqueda' : 'sin_resultado', qq, r.length); }
     paginaActual = 1;
     const { q, marca, cat } = S.filtro;
     const chips = [];
@@ -182,6 +233,7 @@
   let pvEstado = { id: null, i: 0, zoom: false };
   function abrirProducto(id, idx) {
     const p = S.porId[id]; if (!p) return;
+    if (pvEstado.id !== id) track('vista', id);
     pvEstado = { id, i: 0, zoom: false };
     const media = fotosDe(p).map(f => ({ t: 'img', src: f }));
     const vid = driveId(p.video);
@@ -204,12 +256,15 @@
         <div class="meta">Código <b>${esc(p.codigo)}</b> · ${esc(p.categoria)}${p.familia ? ' · ' + esc(p.familia) : ''}</div>
         <div>${badges(p).replace('class="badges"', 'class="row"')}</div>
         <div class="precio">${money(p.pvp)}<small>Precio de venta al público (PVP) · incluye IGV</small></div>
+        ${p.descripcion ? `<p class="desc">${esc(p.descripcion)}</p>` : ''}
+        ${p.ideal ? `<p class="ideal"><b>Ideal para:</b> ${esc(p.ideal)}</p>` : ''}
         ${variantes.length ? `<div><b>Otras presentaciones</b><div class="var">${variantes.map(v => `<button class="pill" data-ver="${esc(v.id)}">${esc(v.nombre.replace(p.nombre, '').trim() || v.id)}</button>`).join('')}</div></div>` : ''}
         ${p.estado === 'Agotado' ? `<p class="err"><b>Agotado por ahora.</b> Escríbenos y te avisamos cuando llegue.</p>
           <div class="acc"><a class="btn green" target="_blank" rel="noopener" href="https://wa.me/${esc(S.config.whatsapp || '51928146619')}?text=${encodeURIComponent('Hola, quiero que me avisen cuando llegue: ' + p.codigo + ' · ' + p.nombre)}">Avísame por WhatsApp</a></div>`
         : `<div class="acc"><div class="qty"><button data-q="-1">−</button><input id="pvq" type="number" min="1" value="${enCarrito || 1}"><button data-q="1">+</button></div>
           <button class="btn red" data-addq="${esc(p.id)}">${enCarrito ? 'Actualizar carrito' : 'Agregar al carrito'}</button></div>
           ${p.estado === 'Próximo ingreso' ? '<p class="meta">Producto en camino: puedes pedirlo y se despacha a su llegada.</p>' : ''}`}
+        ${(p.complementos || []).length ? `<div><b>Se complementa con</b><div class="var">${p.complementos.filter(c => S.categorias.some(x => x[0] === c)).map(c => `<button class="pill" data-c="${esc(c)}">${esc(c)}</button>`).join('')}</div></div>` : ''}
         <div class="docs">
           ${p.ficha ? `<a class="btn ghost" target="_blank" rel="noopener" href="${esc(p.ficha)}">📄 Ficha técnica</a>` : ''}
           ${p.manual ? `<a class="btn ghost" target="_blank" rel="noopener" href="${esc(p.manual)}">📘 Manual</a>` : ''}
@@ -282,6 +337,7 @@
   // ---------- Carrito ----------
   function guardarCart() {
     store.set('tli_cart', S.cart);
+    sincronizarCarrito();
     const n = Object.values(S.cart).reduce((a, b) => a + b, 0);
     $('#cartCount').textContent = n;
   }
@@ -290,6 +346,7 @@
     cant = Math.max(1, Math.min(999, parseInt(cant, 10) || 1));
     S.cart[id] = reemplazar ? cant : (S.cart[id] || 0) + cant;
     guardarCart();
+    track('agregado', id, S.cart[id]);
     toast('✓ ' + p.codigo + ' en el carrito (' + S.cart[id] + ')');
   }
   function totalCart() {
@@ -307,11 +364,30 @@
       }).join('') : '<div class="vacio">Tu carrito está vacío.<br>Toca <b>+</b> en cualquier producto para agregarlo.</div>'}</div>
       <div class="sum"><div class="t"><span>Total</span><span>${money(totalCart())}</span></div>
         <small class="meta">PVP · incluye IGV · sujeto a stock</small>
+        ${completa(ids)}
         <button class="btn red" data-orden ${ids.length ? '' : 'disabled'}>Generar orden de compra</button>
         <button class="btn ghost" data-ccerrar>Seguir comprando</button></div>`;
     $('#cart').hidden = false;
   }
   function cerrarCart() { $('#cart').hidden = true; }
+  // «Completa tu pedido»: productos de las categorías que complementan lo que ya lleva
+  function completa(ids) {
+    if (!ids.length) return '';
+    const enCart = new Set(ids.map(id => S.porId[id].categoria));
+    const cats = [];
+    ids.forEach(id => (S.porId[id].complementos || []).forEach(c => { if (!enCart.has(c) && cats.indexOf(c) < 0) cats.push(c); }));
+    if (!cats.length) return '';
+    const puntaje = p => (p.oferta ? 0 : 2) + (fotosDe(p).length ? 0 : 1);
+    const sug = [];
+    cats.slice(0, 6).forEach(c => {
+      const op = S.productos.filter(p => p.categoria === c && p.estado === 'Activo' && !S.cart[p.id]).sort((a, b) => puntaje(a) - puntaje(b));
+      if (op[0]) sug.push(op[0]);
+    });
+    if (!sug.length) return '';
+    return `<div class="completa"><b>Completa tu pedido</b><div class="cmini">${sug.map(p => `
+      <div class="mini" data-ver="${esc(p.id)}">${imgHTML(p)}<span>${esc(p.categoria)}</span><b>${money(p.pvp)}</b>
+      <button class="pill" data-addc="${esc(p.id)}">+ Agregar</button></div>`).join('')}</div></div>`;
+  }
 
   // ---------- Orden de compra ----------
   let firma = { ctx: null, dibujo: false, vacia: true };
@@ -363,6 +439,8 @@
         if (!f.direccion.value) f.direccion.value = r.direccion || '';
         if (!f.ciudad.value) f.ciudad.value = r.ciudad || '';
         msg.textContent = '✓ Cliente registrado'; msg.className = 'ok';
+        store.set('tli_cliente', Object.assign(cliente(), { ruc, razon: f.razon.value, zona: r.zona || '' }));
+        sincronizarCarrito(true);
       } else { msg.textContent = 'Cliente nuevo: completa tus datos.'; msg.className = 'meta'; }
     } catch { msg.textContent = ''; }
   }
@@ -374,7 +452,7 @@
     ctx.lineWidth = 2.4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#151823';
     firma = { ctx, dibujo: false, vacia: true };
     const pos = e => { const b = c.getBoundingClientRect(); return [e.clientX - b.left, e.clientY - b.top]; };
-    c.onpointerdown = e => { c.setPointerCapture(e.pointerId); firma.dibujo = true; const [x, y] = pos(e); ctx.beginPath(); ctx.moveTo(x, y); };
+    c.onpointerdown = e => { try { c.setPointerCapture(e.pointerId); } catch { /* sin captura */ } firma.dibujo = true; const [x, y] = pos(e); ctx.beginPath(); ctx.moveTo(x, y); };
     c.onpointermove = e => { if (!firma.dibujo) return; const [x, y] = pos(e); ctx.lineTo(x, y); ctx.stroke(); firma.vacia = false; };
     c.onpointerup = c.onpointercancel = () => { firma.dibujo = false; };
   }
@@ -389,18 +467,19 @@
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email)) { msg.textContent = 'Revisa tu correo.'; msg.className = 'err'; return; }
     if (firma.vacia) { msg.textContent = 'Firma en el recuadro para confirmar.'; msg.className = 'err'; return; }
     if (!d.acepto) { msg.textContent = 'Marca la casilla de confirmación.'; msg.className = 'err'; return; }
-    store.set('tli_cliente', { ruc: d.ruc, razon: d.razon, contacto: d.contacto, celular: d.celular, email: d.email, direccion: d.direccion, ciudad: d.ciudad });
+    store.set('tli_cliente', Object.assign(cliente(), { ruc: d.ruc, razon: d.razon, contacto: d.contacto, celular: d.celular, email: d.email, direccion: d.direccion, ciudad: d.ciudad }));
     if (!CFG.api) { msg.textContent = 'La app aún no está conectada al sistema de órdenes. Escríbenos por WhatsApp.'; msg.className = 'err'; return; }
     const btn = $('#enviar'); btn.disabled = true; btn.textContent = 'Enviando…';
     const payload = {
-      accion: 'orden', ...d, origen: origen(),
+      accion: 'orden', ...d, origen: origen(), sesion: SES,
       items: Object.entries(S.cart).map(([id, cantidad]) => ({ id, cantidad })),
       firma: $('#firma').toDataURL('image/png'),
     };
     try {
       const r = await (await fetch(CFG.api, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) })).json();
       if (!r.ok) throw new Error(r.error || 'Error');
-      S.cart = {}; guardarCart();
+      store.set('tli_ultimo', { numero: r.numero, fecha: new Date().toLocaleDateString('es-PE'), items: payload.items });
+      ultimoSync = '[]'; S.cart = {}; guardarCart();
       $('#co').innerHTML = `<div class="cobox" style="text-align:center;padding-top:60px">
         <div style="font-size:64px">✅</div><h1>¡Orden enviada!</h1>
         <p style="font-size:18px">Tu orden <b>N° ${esc(r.numero)}</b> por <b>${money(r.total)}</b> llegó a <b>${esc(d.email)}</b>.</p>
@@ -428,14 +507,17 @@
   window.addEventListener('hashchange', router);
 
   document.addEventListener('click', e => {
-    const t = e.target.closest('button,a') || e.target.closest('article,[data-zoom]');
+    const t = e.target.closest('button,a') || e.target.closest('article,[data-zoom],[data-ver]');
     if (!t) return;
     const ds = t.dataset;
     if (ds.add) { e.stopPropagation(); agregar(ds.add, 1); return; }
+    if (ds.addc) { e.stopPropagation(); agregar(ds.addc, 1); abrirCart(); return; }
+    if ('repetir' in ds) { const u = store.get('tli_ultimo', null); if (u) { u.items.forEach(x => { if (S.porId[x.id] && S.porId[x.id].estado !== 'Agotado') S.cart[x.id] = (S.cart[x.id] || 0) + x.cantidad; }); guardarCart(); abrirCart(); } return; }
+    if (ds.asesor !== undefined || ds.as) { asesorClick(t, ds); return; }
     if (t.matches('article.card')) { abrirProducto(t.dataset.id); return; }
     if (ds.of) { S.oferta = ds.of; vistaInicio(); return; }
     if (ds.m && !t.closest('#pv')) { irA({ m: ds.m }); return; }
-    if (ds.c) { irA({ c: ds.c }); return; }
+    if (ds.c) { cerrarProducto(); cerrarCart(); irA({ c: ds.c }); return; }
     if ('inicio' in ds) { irA({}); return; }
     if (ds.quitar) { const f = { q: S.filtro.q, m: S.filtro.marca, c: S.filtro.cat }; f[ds.quitar] = ''; irA(f); return; }
     if (ds.play) { abrirPlay(ds.play === 'lista' ? S.lista : S.lista); return; }
@@ -447,7 +529,7 @@
     if ('zoom' in ds) { pvEstado.zoom = !pvEstado.zoom; pintarMedia(); return; }
     if (ds.q) { const i = $('#pvq'); i.value = Math.max(1, (+i.value || 1) + +ds.q); return; }
     if (ds.addq) { agregar(ds.addq, $('#pvq').value, true); abrirProducto(ds.addq); return; }
-    if (ds.ver) { abrirProducto(ds.ver); return; }
+    if (ds.ver) { if (t.closest('#cart')) cerrarCart(); if (t.closest('#asesor')) $('#asesor').hidden = true; abrirProducto(ds.ver); return; }
     if (ds.nav) { const pos = S.lista.findIndex(x => x.id === pvEstado.id) + +ds.nav; if (S.lista[pos]) abrirProducto(S.lista[pos].id); return; }
     // presentación
     if (ds.pl) {
@@ -503,6 +585,41 @@
   $('#instNo').onclick = () => { $('#inst').hidden = true; store.set('tli_inst_no', true); };
   $('#iosOk').onclick = () => { $('#ios').hidden = true; };
   window.addEventListener('appinstalled', () => { $('#inst').hidden = true; toast('✓ Catálogo instalado'); });
+
+  // ---------- Asesor IA (Gemini, desde la API) ----------
+  let asH = (() => { try { return JSON.parse(sessionStorage.getItem('tli_asesor')) || []; } catch { return []; } })();
+  const guardarAs = () => { try { sessionStorage.setItem('tli_asesor', JSON.stringify(asH.slice(-20))); } catch { /* */ } };
+  function mostrarAsesor() { $('#btnAs').hidden = !(CFG.api && S.config.asesor); }
+  function pintarAsesor() {
+    const box = $('#asesor');
+    const msgs = asH.length ? asH : [{ rol: 'asesor', texto: '¡Hola! Soy el asesor de Tecno Log IA. Cuéntame qué negocio tienes o qué necesitas (por ejemplo: «voy a abrir una heladería» o «necesito equipos para una pollería») y te armo un pedido con productos del catálogo.' }];
+    box.innerHTML = `<header><b>✨ Asesor IA</b><button data-as="cerrar" aria-label="Cerrar">✕</button></header>
+      <div class="asmsgs" id="asmsgs">${msgs.map((m, k) => `<div class="am ${m.rol}">${esc(m.texto).replace(/\n/g, '<br>')}
+        ${(m.productos || []).length ? `<div class="asprod">${m.productos.filter(x => S.porId[x.id]).map(x => { const p = S.porId[x.id]; return `
+          <div class="aspi" data-ver="${esc(p.id)}">${imgHTML(p)}<div><b>${x.cantidad} × ${esc(p.nombre)}</b><br><span class="meta">${esc(p.codigo)} · ${money(p.pvp)} c/u</span>${x.motivo ? `<br><small>${esc(x.motivo)}</small>` : ''}</div></div>`; }).join('')}
+          <button class="btn red" data-as="todo" data-k="${k}">Agregar todo al carrito</button></div>` : ''}</div>`).join('')}
+        ${asOcupado ? '<div class="am asesor">Pensando…</div>' : ''}</div>
+      <form class="asform" id="asform"><input id="asq" placeholder="Escribe tu consulta…" autocomplete="off" maxlength="500"><button class="btn red" ${asOcupado ? 'disabled' : ''}>Enviar</button></form>
+      <small class="meta" style="padding:0 12px 10px">Respuestas generadas con IA a partir del catálogo; confirma stock y detalles con un asesor.</small>`;
+    $('#asform').onsubmit = ev => { ev.preventDefault(); preguntar($('#asq').value); };
+    const m = $('#asmsgs'); m.scrollTop = m.scrollHeight;
+  }
+  let asOcupado = false;
+  async function preguntar(q) {
+    q = String(q || '').trim(); if (!q || asOcupado) return;
+    asH.push({ rol: 'cliente', texto: q }); asOcupado = true; pintarAsesor();
+    try {
+      const r = await (await fetch(CFG.api, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ accion: 'asesor', sesion: SES, origen: origen(), pregunta: q, historial: asH.slice(-7, -1).map(m => ({ rol: m.rol, texto: m.texto })) }) })).json();
+      asH.push(r.ok ? { rol: 'asesor', texto: r.mensaje, productos: r.productos } : { rol: 'asesor', texto: r.error || 'No pude responder ahora. Escríbenos por WhatsApp.' });
+    } catch { asH.push({ rol: 'asesor', texto: 'Sin conexión. Intenta de nuevo o escríbenos por WhatsApp.' }); }
+    asOcupado = false; guardarAs(); pintarAsesor();
+  }
+  function asesorClick(t, ds) {
+    if (t.id === 'btnAs') { $('#asesor').hidden = false; pintarAsesor(); setTimeout(() => $('#asq') && $('#asq').focus(), 50); return; }
+    if (ds.as === 'cerrar') { $('#asesor').hidden = true; return; }
+    if (ds.as === 'todo') { (asH[+ds.k].productos || []).forEach(x => { if (S.porId[x.id]) S.cart[x.id] = Math.max(S.cart[x.id] || 0, x.cantidad); }); guardarCart(); toast('✓ Productos agregados al carrito'); $('#asesor').hidden = true; abrirCart(); }
+  }
 
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   cargar();
