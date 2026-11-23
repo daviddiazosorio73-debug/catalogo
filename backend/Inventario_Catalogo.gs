@@ -231,10 +231,9 @@ function relacionar() {
 // (carpeta «Tecno Log IA · Catálogo App · Fotos»), las comparte «cualquiera con el enlace»
 // y reemplaza los enlaces en Productos (columnas M y N). Por tandas, sigue sola.
 const MAX_FOTOS = 4;
-function carpetaFotos_() {
-  const it = DriveApp.getFoldersByName('Tecno Log IA · Catálogo App · Fotos');
-  return it.hasNext() ? it.next() : DriveApp.createFolder('Tecno Log IA · Catálogo App · Fotos');
-}
+// Carpeta «Catálogo App · Fotos» de tecnologiapperu@gmail.com (compartida con daviddiazosorio73 como editor)
+const ID_CARPETA_FOTOS = '1ZU2n9fTCC8MW_o1PseW4elDhsIg1JXhy';
+function carpetaFotos_() { return DriveApp.getFolderById(ID_CARPETA_FOTOS); }
 function mapaFotos_(ss) {
   let sh = ss.getSheetByName('_fotos');
   if (!sh) { sh = ss.insertSheet('_fotos'); sh.hideSheet(); sh.getRange('A1:B1').setValues([['origen', 'copia']]); }
