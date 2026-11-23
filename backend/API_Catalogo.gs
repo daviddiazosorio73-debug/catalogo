@@ -424,7 +424,7 @@ function resumenDiario() {
   const html = `<h2>${esc_(cfg.nombre)} · Resumen del ${Utilities.formatDate(new Date(), ZONA, 'dd/MM/yyyy')}</h2>
     <p><b>${ped.length}</b> orden(es) web por <b>${money(ped.reduce((a, r) => a + Number(r[9] || 0), 0))}</b> ·
     <b>${car.length}</b> carrito(s) sin cerrar · <b>${sesiones}</b> visita(s) al catálogo · <b>${asesor.length}</b> consulta(s) al asesor IA.</p>
-    <h3>Órdenes de las últimas 24 h (confirmar hoy)</h3>${ped.length ? '<ul>' + ped.map(r => `<li>${esc_(r[0])} · ${esc_(r[2])} · ${money(r[9])} · ${esc_(r[13])}</li>`).join('') + '</ul>' : '<p>—</p>'}
+    <h3>Órdenes de las últimas 24 h (confirmar hoy)</h3>${ped.length ? '<ul>' + ped.map(r => `<li>${esc_(r[0])} · ${esc_(r[2])} · ${money(r[9])} · ${esc_(r[12])}</li>`).join('') + '</ul>' : '<p>—</p>'}
     <h3>Carritos abandonados (llamar)</h3>${car.length ? '<ul>' + car.map(r => `<li>${esc_(r[3])} (RUC ${esc_(r[2])}) · cel. ${esc_(r[4])} · ${money(r[6])} · ${esc_(r[5])}</li>`).join('') + '</ul>' : '<p>—</p>'}
     <h3>Lo que más buscaron</h3>${li(busq)}
     <h3>Buscaron y NO encontraron (oportunidad para nuevos proveedores)</h3>${li(sinRes)}
