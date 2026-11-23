@@ -206,6 +206,7 @@ function relacionar() {
   const marcas = P.map((p, i) => [p[2] || mat[i].marca]);
   const resto = mat.map((m, i) => {
     const res = [];
+    m.fotos = Array.from(new Set(m.fotos));
     if (m.fotos.length) res.push(m.fotos.length + ' foto(s)');
     if (m.ficha) res.push('ficha');
     if (m.manual) res.push('manual');
@@ -267,7 +268,9 @@ function continuarFotos() {
 
   while (fila <= last && Date.now() - t0 < LIMITE_MS) {
     const r = shP.getRange(fila, 13, 1, 2).getValues()[0]; // M foto principal, N galería
-    const urls = [r[0]].concat(String(r[1] || '').split('|')).map(s => String(s).trim()).filter(Boolean).slice(0, MAX_FOTOS);
+    const vistos = new Set();
+    const urls = [r[0]].concat(String(r[1] || '').split('|')).map(s => String(s).trim()).filter(Boolean)
+      .filter(u => { const k = idDe_(u) || u; if (vistos.has(k)) return false; vistos.add(k); return true; }).slice(0, MAX_FOTOS);
     const salida = [];
     urls.forEach(u => {
       const id = idDe_(u);
