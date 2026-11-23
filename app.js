@@ -28,23 +28,30 @@
   const origen = () => sessionStorage.getItem('tli_origen') || 'directo';
 
   // ---------- Carga ----------
+  // Muestra al instante lo guardado en el equipo y actualiza en segundo plano desde la hoja.
   async function cargar() {
+    const guardado = store.get('tli_cache', null);
+    let mostrado = false;
+    if (guardado && guardado.productos && guardado.productos.length) { aplicar(guardado); mostrado = true; }
     let data = null;
     if (CFG.api) {
       try {
         const r = await fetch(CFG.api + '?accion=productos', { cache: 'no-store' });
         data = await r.json();
-        if (!data.ok) data = null;
-        else store.set('tli_cache', data);
+        if (!data.ok) data = null; else store.set('tli_cache', data);
       } catch { data = null; }
     }
-    if (!data) data = store.get('tli_cache', null);
-    if (!data || !CFG.api) {
+    if (!data && !mostrado) {
       try { data = await (await fetch('data/productos.json', { cache: 'no-cache' })).json(); } catch { /* sin copia local */ }
     }
-    if (!data) { $('#main').innerHTML = '<div class="vacio">No se pudo cargar el catálogo. Revisa tu conexión.</div>'; return; }
+    if (data) aplicar(data, mostrado);
+    else if (!mostrado) $('#main').innerHTML = '<div class="vacio">No se pudo cargar el catálogo. Revisa tu conexión.</div>';
+  }
+
+  function aplicar(data, refresco) {
     S.config = data.config || {};
     S.productos = (data.productos || []).filter(p => p.estado !== 'Oculto');
+    S.porId = {};
     S.productos.forEach(p => {
       p._t = norm([p.codigo, p.nombre, p.marca, p.categoria, p.familia, p.lista].join(' '));
       p._c = normCod(p.codigo);
@@ -59,9 +66,10 @@
     S.categorias = cuenta('categoria');
     if (S.config.vigencia) $('#vig').textContent = '· PVP con IGV · ' + S.config.vigencia;
     $('#wa').href = 'https://wa.me/' + (S.config.whatsapp || '51928146619') + '?text=' + encodeURIComponent('Hola Tecno Log IA, tengo una consulta del catálogo digital.');
-    // limpiar carrito de productos que ya no existen
     Object.keys(S.cart).forEach(id => { if (!S.porId[id]) delete S.cart[id]; });
     guardarCart();
+    // En el refresco no se interrumpe al usuario si está viendo un producto, el carrito o la orden
+    if (refresco && (!$('#pv').hidden || !$('#co').hidden || !$('#cart').hidden || !$('#play').hidden)) return;
     router();
   }
 
