@@ -51,7 +51,9 @@ function config_() {
     whatsapp: String(m['WhatsApp ventas'] || '51928146619'),
     moneda: m['Moneda'] || 'PEN',
     precios: m['Precios mostrados'] || 'PVP',
-    vigencia: m['Vigencia de la lista'] || '',
+    vigencia: m['Vigencia de la lista'] instanceof Date
+      ? Utilities.formatDate(m['Vigencia de la lista'], ZONA, 'MMMM yyyy').replace(/^./, c => c.toUpperCase())
+      : String(m['Vigencia de la lista'] || ''),
     validez: Number(m['Validez de la orden (días)'] || 7),
   };
 }
@@ -99,6 +101,19 @@ function siguienteNumero_(sh) {
   const n = sh.getLastRow(); // fila 1 = encabezados
   const anio = Utilities.formatDate(new Date(), ZONA, 'yyyy');
   return 'TLI-' + anio + '-' + String(n).padStart(4, '0');
+}
+
+// Logo de la marca incrustado en el PDF (se descarga una vez y queda guardado 6 horas)
+function logoData_() {
+  const cache = CacheService.getScriptCache();
+  let b64 = cache.get('logo');
+  if (!b64) {
+    try {
+      b64 = Utilities.base64Encode(UrlFetchApp.fetch('https://daviddiazosorio73-debug.github.io/catalogo/assets/logo-pdf.png').getContent());
+      if (b64.length < 95000) cache.put('logo', b64, 21600);
+    } catch (e) { return ''; }
+  }
+  return 'data:image/png;base64,' + b64;
 }
 
 function esc_(s) {
@@ -149,7 +164,7 @@ function registrarOrden_(d) {
 
     // PDF de la orden
     const money = n => 'S/ ' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const filas = lineas.map((l, i) => `<tr><td>${i + 1}</td><td>${esc_(l.codigo)}</td><td>${esc_(l.marca)}</td><td>${esc_(l.nombre)}${l.estado === 'Próximo ingreso' ? ' <i>(próximo ingreso)</i>' : ''}</td><td class="r">${l.cantidad}</td><td class="r">${money(l.precio)}</td><td class="r">${money(l.subtotal)}</td></tr>`).join('');
+    const filas = lineas.map((l, i) => `<tr><td>${i + 1}</td><td class="n">${esc_(l.codigo)}</td><td>${esc_(l.marca)}</td><td>${esc_(l.nombre)}${l.estado === 'Próximo ingreso' ? ' <i>(próximo ingreso)</i>' : ''}</td><td class="r">${l.cantidad}</td><td class="r">${money(l.precio)}</td><td class="r">${money(l.subtotal)}</td></tr>`).join('');
     const html = `<html><head><meta charset="utf-8"><style>
       body{font-family:Arial,Helvetica,sans-serif;color:#1b1d26;font-size:11px;margin:28px}
       h1{font-size:20px;margin:0;color:#14161f} .muted{color:#666} .r{text-align:right}
@@ -157,9 +172,10 @@ function registrarOrden_(d) {
       .tag{display:inline-block;background:#FFD24A;color:#3A2600;font-weight:bold;padding:3px 8px;border-radius:4px;font-size:10px}
       table{width:100%;border-collapse:collapse;margin-top:10px} th{background:#14161f;color:#fff;text-align:left;padding:6px;font-size:10px}
       td{border-bottom:1px solid #ddd;padding:6px;vertical-align:top} .tot td{border:none;font-size:12px}
+      td.r,th.r,td.n{white-space:nowrap} .top h1{white-space:nowrap} .logo{height:46px}
       .box{border:1px solid #ccc;border-radius:6px;padding:10px;margin-top:6px} .firma img{height:90px}
     </style></head><body>
-      <table class="top"><tr><td><h1>${esc_(cfg.nombre)}</h1><div class="muted">Tecnología e IA para el Perú · WhatsApp ${esc_(cfg.whatsapp.replace(/^51/, ''))} · ${esc_(cfg.correo)}</div>
+      <table class="top"><tr><td><img class="logo" src="${logoData_()}"><br><div class="muted">Tecnología e IA para el Perú · WhatsApp ${esc_(cfg.whatsapp.replace(/^51/, ''))} · ${esc_(cfg.correo)}</div>
       <div class="tag">SOLO DISTRIBUIDORES Y MAYORISTAS</div></td>
       <td class="r"><h1>ORDEN DE COMPRA</h1><div><b>N° ${numero}</b></div><div>Fecha: ${fecha}</div><div>Válida hasta: ${vence}</div></td></tr></table>
       <div class="box"><b>Cliente:</b> ${esc_(d.razon)} &nbsp; <b>RUC:</b> ${ruc}<br>
