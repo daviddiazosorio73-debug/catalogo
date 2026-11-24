@@ -522,13 +522,17 @@ function panelProductos() {
 // =====================================================================
 function clave_() { return PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY'); }
 
+/** Prueba de la IA desde el editor: Ejecutar ▶ «probarIA». */
+function probarIA() { Logger.log(gemini_('Responde solo: «IA conectada a Tecno Log IA».', false)); }
+
 function gemini_(prompt, comoJson) {
   const ss = hoja_(); const modelo = String(cfgMap_(ss)['Modelo IA'] || 'gemini-2.5-flash');
-  const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(modelo) + ':generateContent?key=' + clave_();
+  // La clave va en el encabezado (funciona con las claves nuevas «AQ.» y las antiguas «AIza»)
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(modelo) + ':generateContent';
   const cuerpo = { contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4, maxOutputTokens: 1200 } };
   if (comoJson) cuerpo.generationConfig.responseMimeType = 'application/json';
-  const r = UrlFetchApp.fetch(url, { method: 'post', contentType: 'application/json', payload: JSON.stringify(cuerpo), muteHttpExceptions: true });
-  if (r.getResponseCode() !== 200) throw new Error('IA no disponible (' + r.getResponseCode() + ')');
+  const r = UrlFetchApp.fetch(url, { method: 'post', contentType: 'application/json', headers: { 'x-goog-api-key': clave_() }, payload: JSON.stringify(cuerpo), muteHttpExceptions: true });
+  if (r.getResponseCode() !== 200) throw new Error('IA no disponible (' + r.getResponseCode() + ': ' + r.getContentText().slice(0, 160) + ')');
   const t = JSON.parse(r.getContentText()).candidates[0].content.parts.map(p => p.text || '').join('');
   return comoJson ? JSON.parse(t) : t.trim();
 }
