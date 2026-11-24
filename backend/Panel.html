@@ -243,6 +243,11 @@ function descanso(){
   $('#verCola').onclick = pintar;
 }
 $('#recargar').onclick = cargar;
+if (!(window.google && google.script && google.script.run)) {
+  $('#fecha').textContent = 'Vista previa';
+  $('#main').innerHTML = '<div class="vacio"><div class="big">📲</div><h1>Este archivo no se abre solo</h1><p class="sub">Pégalo en Apps Script como «Panel» y ábrelo desde la URL de la aplicación web (Implementar → Aplicación web) o desde el ícono del Panel.</p></div>';
+  return;
+}
 cargar();
 })();
 </script>
