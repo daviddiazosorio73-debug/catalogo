@@ -386,7 +386,7 @@ ${catalogoTexto_()}`;
   const cuerpo = {
     systemInstruction: { parts: [{ text: sistema }] },
     contents: historial.concat([{ role: 'user', parts: [{ text: pregunta }] }]),
-    generationConfig: { temperature: 0.3, responseMimeType: 'application/json', maxOutputTokens: 1500 },
+    generationConfig: { temperature: 0.3, responseMimeType: 'application/json', maxOutputTokens: 4096, thinkingConfig: { thinkingBudget: 0 } },
   };
   const r = UrlFetchApp.fetch(url, { method: 'post', contentType: 'application/json', headers: { 'x-goog-api-key': clave }, payload: JSON.stringify(cuerpo), muteHttpExceptions: true });
   if (r.getResponseCode() !== 200) return { ok: false, error: 'El asesor no está disponible en este momento (' + r.getResponseCode() + ').' };

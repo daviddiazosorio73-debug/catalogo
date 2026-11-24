@@ -166,7 +166,7 @@ function cargarIA(c){
     $('#ia').innerHTML = '<b>✨ Guion IA</b><ol>'+o.guion.map(function(g){ return '<li>'+esc(g)+'</li>'; }).join('')+'</ol>'+
       (o.objecion ? '<div class="mini" style="margin-top:6px"><b>Si dice que no:</b> '+esc(o.objecion)+'</div>' : '');
     if (o.whatsapp && $('#wa')) $('#wa').href = 'https://wa.me/'+c.wa+'?text='+encodeURIComponent(o.whatsapp);
-  }).catch(function(){ if (D.cola[i]===c) $('#ia').textContent = '✨ La IA no respondió; sigue con tu guion de siempre.'; });
+  }).catch(function(e){ if (D.cola[i]===c) $('#ia').textContent = '✨ La IA no respondió (' + String(e && e.message || e).slice(0, 120) + '); sigue con tu guion de siempre.'; });
 }
 function ordenar(){
   var t = $('#com').value.trim(); if (!t) return toast('Escribe primero lo que pasó');
