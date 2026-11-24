@@ -526,7 +526,7 @@ function clave_() { return PropertiesService.getScriptProperties().getProperty('
 function probarIA() { Logger.log(gemini_('Responde solo: «IA conectada a Tecno Log IA».', false)); }
 
 function gemini_(prompt, comoJson) {
-  const ss = hoja_(); const modelo = String(cfgMap_(ss)['Modelo IA'] || 'gemini-2.5-flash');
+  const ss = hoja_(); const modelo = String(cfgMap_(ss)['Modelo IA'] || 'gemini-flash-latest');
   // La clave va en el encabezado (funciona con las claves nuevas «AQ.» y las antiguas «AIza»)
   const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(modelo) + ':generateContent';
   const cuerpo = { contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4, maxOutputTokens: 1200 } };

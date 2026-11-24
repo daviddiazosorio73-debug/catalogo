@@ -65,7 +65,7 @@ function config_() {
       : String(m['Vigencia de la lista'] || ''),
     validez: Number(m['Validez de la orden (días)'] || 7),
     asesor: String(m['Asesor IA activo'] || 'Sí') === 'Sí' && !!PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY'),
-    modelo: String(m['Modelo IA'] || 'gemini-2.5-flash'),
+    modelo: String(m['Modelo IA'] || 'gemini-flash-latest'),
     horasCarrito: Number(m['Horas para carrito abandonado'] || 2),
     hojaVentas: String(m['Hoja de ventas (lista Hoy)'] || HOJA_CLIENTES),
     correoResumen: String(m['Correo del resumen diario'] || ''),
