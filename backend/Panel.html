@@ -3,11 +3,11 @@
 <head>
 <base target="_top">
 <meta charset="utf-8">
-<meta name="theme-color" content="#151823">
+<meta name="theme-color" content="#0b0d14">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--g1:#151823;--g2:#262b3d;--gold:#f2c94c;--red:#e8264f;--green:#13a653;--bg:#eef0f5;--card:#fff;--ink:#151823;--mut:#667;--line:#e3e5ec}
+:root{--g1:#0b0d14;--g2:#1f2333;--gold:#f2c94c;--red:#e8264f;--green:#13a653;--bg:#0f1118;--card:#181b26;--ink:#e9ebf3;--mut:#9aa1b6;--line:#2c3144;--soft:#212536;color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 'Space Grotesk',system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
 header{position:sticky;top:0;z-index:5;background:var(--g1);color:#fff;padding:10px 14px 8px}
@@ -18,41 +18,45 @@ header{position:sticky;top:0;z-index:5;background:var(--g1);color:#fff;padding:1
 .k span{display:block;font-size:11px;color:#aab}.k b{font-size:15px;color:var(--gold)}
 .bar{height:6px;background:#333a50;border-radius:9px;margin-top:8px;overflow:hidden}.bar i{display:block;height:100%;background:var(--gold);transition:width .4s}
 main{padding:12px;max-width:760px;margin:0 auto}
-.card{background:var(--card);border-radius:18px;padding:16px;box-shadow:0 6px 24px rgba(20,24,35,.08);animation:in .25s ease}
+.card{background:var(--card);border-radius:18px;padding:16px;box-shadow:0 6px 24px rgba(0,0,0,.35);border:1px solid var(--line);animation:in .25s ease}
 @keyframes in{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
-.chip{font-size:12px;padding:3px 9px;border-radius:99px;background:#f1f2f6;font-weight:600}
-.chip.r{background:#ffe3ea;color:#b0123a}.chip.g{background:#ddf6e7;color:#0b7a3b}.chip.y{background:#fff3cc;color:#7a5a00}.chip.d{background:var(--g1);color:var(--gold)}
+.chip{font-size:12px;padding:3px 9px;border-radius:99px;background:var(--soft);font-weight:600}
+.chip.r{background:#3a1520;color:#ff8aa5}.chip.g{background:#123222;color:#6ee39b}.chip.y{background:#3a3112;color:#f5d66e}.chip.d{background:var(--g1);color:var(--gold)}
 h1{font-size:21px;margin:2px 0 2px;line-height:1.2}
 .sub{color:var(--mut);font-size:13px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
-.dato{background:#f7f8fb;border-radius:10px;padding:8px 10px}.dato span{display:block;font-size:11px;color:var(--mut)}.dato b{font-size:14px;word-break:break-word}
+.dato{background:var(--soft);border-radius:10px;padding:8px 10px}.dato span{display:block;font-size:11px;color:var(--mut)}.dato b{font-size:14px;word-break:break-word}
 .acts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 0}
 .btn{border:0;border-radius:12px;padding:12px 10px;font:600 15px 'Space Grotesk',system-ui;cursor:pointer;text-align:center;text-decoration:none;color:#fff;background:var(--g1);display:inline-flex;align-items:center;justify-content:center;gap:6px}
-.btn.red{background:var(--red)}.btn.green{background:var(--green)}.btn.gold{background:var(--gold);color:var(--ink)}.btn.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line)}
+.btn.red{background:var(--red)}.btn.green{background:var(--green)}.btn.gold{background:var(--gold);color:#151823}.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
 .btn:disabled{opacity:.5}
 details{border-top:1px solid var(--line);padding:10px 0}
 summary{font-weight:700;cursor:pointer;list-style:none}summary::-webkit-details-marker{display:none}
 summary::after{content:'＋';float:right;color:var(--mut)}details[open] summary::after{content:'－'}
-.ia{background:linear-gradient(135deg,#fffaf0,#fff);border:1.5px solid var(--gold);border-radius:12px;padding:10px 12px;margin:10px 0}
+.ia{background:linear-gradient(135deg,#2a2412,#1b1d27);border:1.5px solid var(--gold);border-radius:12px;padding:10px 12px;margin:10px 0}
 .ia ol{margin:6px 0 0 18px;padding:0}.ia li{margin:4px 0}
 .hist div{font-size:13px;padding:5px 0;border-bottom:1px dashed var(--line)}
 .res{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
-.res button{border:1.5px solid var(--line);background:#fff;border-radius:99px;padding:8px 11px;font:600 13px 'Space Grotesk',system-ui,sans-serif;cursor:pointer}
+.res button{color:var(--ink);border:1.5px solid var(--line);background:var(--soft);border-radius:99px;padding:8px 11px;font:600 13px 'Space Grotesk',system-ui,sans-serif;cursor:pointer}
 .res button.on{background:var(--g1);color:var(--gold);border-color:var(--g1)}
-textarea,input,select{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:10px;font:15px 'Space Grotesk',system-ui;background:#fff}
+textarea,input,select{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:10px;font:15px 'Space Grotesk',system-ui;background:var(--soft);color:var(--ink)}
 textarea{min-height:76px;resize:vertical}
+.voz{display:flex;gap:8px;align-items:stretch}.voz textarea{flex:1}
+.mic{flex:0 0 64px;border:0;border-radius:14px;background:var(--red);color:#fff;font-size:26px;cursor:pointer}
+.mic.on{animation:lat 1s infinite;background:#ff3d6a}@keyframes lat{50%{box-shadow:0 0 0 8px rgba(232,38,79,.35)}}
+.mini{color:var(--mut)}
 .row{display:flex;gap:8px;align-items:center}.row>*{flex:1}
 .save{position:sticky;bottom:0;background:linear-gradient(transparent,var(--bg) 30%);padding:14px 0 8px;display:grid;grid-template-columns:1fr 2fr;gap:8px}
 .vacio{text-align:center;padding:50px 20px}.vacio .big{font-size:56px}
 .toast{position:fixed;left:50%;top:86px;transform:translateX(-50%);background:var(--g1);color:#fff;padding:10px 16px;border-radius:12px;z-index:50;font-weight:600}
-.lst .it{background:#fff;border-radius:12px;padding:10px 12px;margin:8px 0;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+.lst .it{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0;box-shadow:0 2px 10px rgba(0,0,0,.05)}
 .prod{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
 .prod button{flex:0 0 auto}
 .mini{font-size:12px;color:var(--mut)}
 .load{opacity:.6;pointer-events:none}
 .sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
-.sheet>div{background:#fff;width:min(760px,100%);max-height:88vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px}
+.sheet>div{background:var(--card);width:min(760px,100%);max-height:88vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px}
 </style>
 </head>
 <body>
@@ -137,7 +141,7 @@ function pintar(){
     (c.notas ? '<details><summary>Notas</summary><div class="mini" style="font-size:13px">'+esc(c.notas)+'</div></details>' : '')+
     '<h3 style="margin:14px 0 4px">¿Cómo te fue?</h3>'+
     '<div class="res" id="res">'+D.resultados.map(function(r){ return '<button data-r="'+esc(r)+'">'+esc(r)+'</button>'; }).join('')+'</div>'+
-    '<textarea id="com" placeholder="Escribe o dicta lo que dijo el cliente (🎤 del teclado)…"></textarea>'+
+    '<div class="voz"><textarea id="com" placeholder="Escribe o toca 🎤 y habla: lo que dijo el cliente…"></textarea><button class="mic" id="mic" title="Dictar">🎤</button></div>'+
     (D.ia ? '<button class="btn ghost" id="ordenar" style="width:100%;margin-top:8px">✨ Ordenar mis notas con IA</button>' : '')+
     '<div class="row" style="margin-top:8px"><input id="acc" placeholder="Próxima acción"><input id="fec" type="date"></div>'+
     '<div class="save"><button class="btn ghost" id="saltar">Saltar ⏭</button><button class="btn red" id="guardar">Guardar y siguiente →</button></div>'+
@@ -147,6 +151,7 @@ function pintar(){
   $('#saltar').onclick = function(){ D.cola.push(D.cola.splice(i,1)[0]); pintar(); toast('Lo dejé al final de la lista'); };
   $('#bCot').onclick = cotizar;
   if ($('#ordenar')) $('#ordenar').onclick = ordenar;
+  $('#mic').onclick = dictar;
   if (D.ia) cargarIA(c);
   window.scrollTo(0,0);
 }
@@ -167,6 +172,29 @@ function cargarIA(c){
       (o.objecion ? '<div class="mini" style="margin-top:6px"><b>Si dice que no:</b> '+esc(o.objecion)+'</div>' : '');
     if (o.whatsapp && $('#wa')) $('#wa').href = 'https://wa.me/'+c.wa+'?text='+encodeURIComponent(o.whatsapp);
   }).catch(function(e){ if (D.cola[i]===c) $('#ia').textContent = '✨ La IA no respondió (' + String(e && e.message || e).slice(0, 120) + '); sigue con tu guion de siempre.'; });
+}
+// ---------- Dictado por voz ----------
+var rec = null;
+function agregarTexto(t){ var c=$('#com'); if (!c || !t) return; c.value = (c.value ? c.value.replace(/\s+$/,'') + ' ' : '') + t.trim(); }
+window.addEventListener('message', function(e){ if (e.data && e.data.tli_voz) { agregarTexto(e.data.tli_voz); toast('Texto agregado'); } });
+function dictarAparte(){
+  // Apps Script no deja usar el micrófono dentro de la app: se abre una ventanita propia que devuelve el texto
+  var w = window.open(D.panelVoz || 'https://daviddiazosorio73-debug.github.io/catalogo/panel/voz.html', 'voz', 'width=420,height=560');
+  if (!w) toast('Permite las ventanas emergentes para dictar');
+}
+function dictar(){
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (rec) { rec.stop(); return; }
+  if (!SR) return dictarAparte();
+  try {
+    rec = new SR(); rec.lang = 'es-PE'; rec.continuous = true; rec.interimResults = false;
+    var b = $('#mic'); b.classList.add('on'); b.textContent = '■';
+    rec.onresult = function(ev){ for (var k = ev.resultIndex; k < ev.results.length; k++) if (ev.results[k].isFinal) agregarTexto(ev.results[k][0].transcript); };
+    rec.onerror = function(ev){ var x = ev.error; rec = null; fin(); if (x === 'not-allowed' || x === 'service-not-allowed' || x === 'audio-capture') dictarAparte(); else if (x !== 'no-speech' && x !== 'aborted') toast('Dictado: ' + x); };
+    rec.onend = function(){ rec = null; fin(); };
+    rec.start();
+  } catch (e) { rec = null; fin(); dictarAparte(); }
+  function fin(){ var m = $('#mic'); if (m) { m.classList.remove('on'); m.textContent = '🎤'; } }
 }
 function ordenar(){
   var t = $('#com').value.trim(); if (!t) return toast('Escribe primero lo que pasó');

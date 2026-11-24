@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0b0d14">
+<title>Dictar · Panel de ventas</title>
+<link rel="icon" href="icon-32.png">
+<style>
+body{margin:0;min-height:100vh;background:#0f1118;color:#e9ebf3;font:16px/1.45 system-ui,-apple-system,'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px;box-sizing:border-box;gap:14px}
+h1{font-size:19px;margin:0}p{color:#9aa1b6;margin:0;text-align:center}
+#mic{width:120px;height:120px;border-radius:50%;border:0;background:#e8264f;color:#fff;font-size:52px;cursor:pointer;box-shadow:0 0 0 0 rgba(232,38,79,.5)}
+#mic.on{animation:lat 1s infinite}@keyframes lat{50%{box-shadow:0 0 0 18px rgba(232,38,79,.2)}}
+textarea{width:min(420px,100%);min-height:150px;border-radius:14px;border:1.5px solid #2c3144;background:#212536;color:#e9ebf3;padding:12px;font:16px system-ui;box-sizing:border-box}
+.b{width:min(420px,100%);border:0;border-radius:14px;padding:14px;font:600 17px system-ui;cursor:pointer;background:#13a653;color:#fff}
+.b.o{background:transparent;border:1.5px solid #2c3144;color:#e9ebf3}
+</style>
+</head>
+<body>
+<h1>🎤 Dictar comentario</h1>
+<p id="msg">Toca el micrófono y habla. Toca otra vez para parar.</p>
+<button id="mic">🎤</button>
+<textarea id="t" placeholder="Aquí aparece lo que dices (puedes corregirlo)"></textarea>
+<button class="b" id="usar">Usar este texto</button>
+<button class="b o" id="cerrar">Cancelar</button>
+<script>
+(function () {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition, rec = null;
+  var mic = document.getElementById('mic'), t = document.getElementById('t'), msg = document.getElementById('msg');
+  if (!SR) { msg.textContent = 'Este navegador no permite dictar. Usa Chrome (Android/PC) o Safari (iPhone).'; mic.disabled = true; }
+  mic.onclick = function () {
+    if (rec) { rec.stop(); return; }
+    rec = new SR(); rec.lang = 'es-PE'; rec.continuous = true; rec.interimResults = true;
+    var base = t.value;
+    rec.onresult = function (e) {
+      var fin = '', parcial = '';
+      for (var k = 0; k < e.results.length; k++) (e.results[k].isFinal ? (fin += e.results[k][0].transcript + ' ') : (parcial += e.results[k][0].transcript));
+      t.value = (base ? base + ' ' : '') + fin + parcial;
+    };
+    rec.onerror = function (e) { msg.textContent = e.error === 'not-allowed' ? 'Permite el micrófono para este sitio (candado de la barra de direcciones).' : 'Dictado: ' + e.error; };
+    rec.onend = function () { rec = null; mic.classList.remove('on'); mic.textContent = '🎤'; };
+    rec.start(); mic.classList.add('on'); mic.textContent = '■'; msg.textContent = 'Escuchando… toca ■ para terminar.';
+  };
+  document.getElementById('usar').onclick = function () {
+    var v = t.value.trim();
+    if (window.opener && v) { window.opener.postMessage({ tli_voz: v }, '*'); window.close(); }
+    else if (v && navigator.clipboard) navigator.clipboard.writeText(v).then(function () { msg.textContent = 'Copiado: vuelve al Panel y pégalo.'; });
+  };
+  document.getElementById('cerrar').onclick = function () { window.close(); };
+})();
+</script>
+</body>
+</html>
