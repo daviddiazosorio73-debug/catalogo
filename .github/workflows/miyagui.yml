@@ -1,0 +1,25 @@
+name: Fotos de Industrias Miyagui
+
+on:
+  workflow_dispatch: {}
+  push:
+    paths: [".github/workflows/miyagui.yml", "scripts/miyagui_fotos.py"]
+
+permissions:
+  contents: write
+
+jobs:
+  fotos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install -q requests pillow
+      - run: python scripts/miyagui_fotos.py
+      - name: Guardar
+        run: |
+          git config user.name "catalogo-bot"
+          git config user.email "catalogo-bot@users.noreply.github.com"
+          git add assets/m
+          git diff --cached --quiet || git commit -q -m "Fotos de Industrias Miyagui: $(date -u +%Y-%m-%d)"
+          for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 5; done
