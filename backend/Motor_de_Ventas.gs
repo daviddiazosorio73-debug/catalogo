@@ -525,25 +525,38 @@ function clave_() { return PropertiesService.getScriptProperties().getProperty('
 function probarIA() { const t = Date.now(); Logger.log(gemini_('Responde solo: «IA conectada a Tecno Log IA».', false) + ' · ' + Math.round((Date.now() - t) / 1000) + ' s'); }
 
 function gemini_(prompt, comoJson) {
-  const ss = hoja_(); const modelo = String(cfgMap_(ss)['Modelo IA'] || 'gemini-flash-latest');
-  // La clave va en el encabezado (funciona con las claves nuevas «AQ.» y las antiguas «AIza»)
-  const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(modelo) + ':generateContent';
-  const llamar = conPensamiento => {
-    const gc = { temperature: 0.4, maxOutputTokens: 4096 };
-    if (comoJson) gc.responseMimeType = 'application/json';
-    if (!conPensamiento) gc.thinkingConfig = { thinkingBudget: 0 }; // respuesta rápida, sin «pensar» largo
-    return UrlFetchApp.fetch(url, { method: 'post', contentType: 'application/json', headers: { 'x-goog-api-key': clave_() },
-      payload: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: gc }), muteHttpExceptions: true });
-  };
-  let r = llamar(false);
-  if (r.getResponseCode() === 400) r = llamar(true); // modelos que no aceptan ese ajuste
-  if (r.getResponseCode() !== 200) throw new Error('IA no disponible (' + r.getResponseCode() + ': ' + r.getContentText().slice(0, 160) + ')');
-  const c = (JSON.parse(r.getContentText()).candidates || [])[0];
-  const t = c && c.content ? (c.content.parts || []).filter(p => !p.thought).map(p => p.text || '').join('') : '';
-  if (!t) throw new Error('IA sin respuesta' + (c && c.finishReason ? ' (' + c.finishReason + ')' : ''));
-  if (!comoJson) return t.trim();
-  const j = t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1);
-  return JSON.parse(j);
+  const ss = hoja_();
+  const principal = String(cfgMap_(ss)['Modelo IA'] || 'gemini-flash-latest');
+  // Si el modelo principal está saturado (503/429), reintenta y pasa a uno más liviano
+  const modelos = [principal, 'gemini-flash-lite-latest', 'gemini-flash-latest'].filter((m, i, a) => a.indexOf(m) === i);
+  let ultimo = '';
+  for (const modelo of modelos) {
+    // La clave va en el encabezado (funciona con las claves nuevas «AQ.» y las antiguas «AIza»)
+    const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(modelo) + ':generateContent';
+    const llamar = conPensamiento => {
+      const gc = { temperature: 0.4, maxOutputTokens: 4096 };
+      if (comoJson) gc.responseMimeType = 'application/json';
+      if (!conPensamiento) gc.thinkingConfig = { thinkingBudget: 0 }; // respuesta rápida
+      return UrlFetchApp.fetch(url, { method: 'post', contentType: 'application/json', headers: { 'x-goog-api-key': clave_() },
+        payload: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: gc }), muteHttpExceptions: true });
+    };
+    for (let intento = 0; intento < 2; intento++) {
+      let r = llamar(false);
+      if (r.getResponseCode() === 400) r = llamar(true);
+      const code = r.getResponseCode();
+      if (code === 200) {
+        const c = (JSON.parse(r.getContentText()).candidates || [])[0];
+        const t = c && c.content ? (c.content.parts || []).filter(p => !p.thought).map(p => p.text || '').join('') : '';
+        if (!t) { ultimo = 'sin respuesta' + (c && c.finishReason ? ' (' + c.finishReason + ')' : ''); break; }
+        if (!comoJson) return t.trim();
+        return JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1));
+      }
+      ultimo = code + ': ' + r.getContentText().slice(0, 120);
+      if (code !== 503 && code !== 429 && code !== 500) break; // otros errores: probar el siguiente modelo
+      Utilities.sleep(1500 * (intento + 1));
+    }
+  }
+  throw new Error('IA ocupada, intenta en un momento (' + ultimo + ')');
 }
 
 function ofertas_() {
