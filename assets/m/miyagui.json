@@ -1,1 +1,602 @@
-{}
+{
+ "DKE-7L": {
+  "codigo": "DKE-7L",
+  "archivo": "assets/m/DKE-7L.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/maquina-churrera-manual-dke-7l-dakota/",
+  "titulo": "Máquina Churrera Manual DKE-7L | 10L | Perú"
+ },
+ "BC-2900": {
+  "codigo": "BC-2900",
+  "archivo": "assets/m/BC-2900.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/visicoolers-290-litros-bc2900-ilumi/",
+  "titulo": "Visicooler 290L BC2900 | Exhibe y Conserva | Perú"
+ },
+ "BC-3200": {
+  "codigo": "BC-3200",
+  "archivo": "assets/m/BC-3200.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/visicoolers-320-litros-bc-3200-ilumi/",
+  "titulo": "Visicooler 320L BC-3200 | Exhibe y Conserva | Perú"
+ },
+ "BC-3500": {
+  "codigo": "BC-3500",
+  "archivo": "assets/m/BC-3500.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/visicoolers-350-litros-bc-3500-ilumi/",
+  "titulo": "Visicooler 350L BC-3500 | Exhibe y Conserva | Perú"
+ },
+ "BC-2200FC": {
+  "codigo": "BC-2200FC",
+  "archivo": "assets/m/BC-2200FC.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/visicoolers-220-litros-fan-cooling-bc-2200fc-ilumi/",
+  "titulo": "Visicooler 220 Litros Ilumi BC-2200FC | Miyagui"
+ },
+ "BC-2900FC": {
+  "codigo": "BC-2900FC",
+  "archivo": "assets/m/BC-2900FC.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/visicoolers-290-litros-fan-cooling-bc2900fc-ilumi/",
+  "titulo": "Visicooler 290L Fan Cooling BC2900FC | Perú"
+ },
+ "BC-3500FC": {
+  "codigo": "BC-3500FC",
+  "archivo": "assets/m/BC-3500FC.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/visicoolers-350-litros-fan-cooling-bc3500fc-ilumi/",
+  "titulo": "Visicooler 350L BC3500FC Fan Cooling - Perú"
+ },
+ "BC-4600FC": {
+  "codigo": "BC-4600FC",
+  "archivo": "assets/m/BC-4600FC.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/visicoolers-460-litros-fan-cooling-bc4600fc-ilumi/",
+  "titulo": "Visicooler 460L BC4600FC Fan Cooling - Perú"
+ },
+ "BC-5800FC": {
+  "codigo": "BC-5800FC",
+  "archivo": "assets/m/BC-5800FC.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/visicoolers-580-litros-fan-cooling-bc-5800fc-ilumi/",
+  "titulo": "Visicooler 580L BC-5800FC Fan Cooling - Perú"
+ },
+ "BC-5502FC": {
+  "codigo": "BC-5502FC",
+  "archivo": "assets/m/BC-5502FC.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/visicoolers-550-litros-fan-cooling-bc-5502fc-ilumi/",
+  "titulo": "Visicooler 550L BC-5502FC Fan Cooling - Perú"
+ },
+ "BC-7502FC": {
+  "codigo": "BC-7502FC",
+  "archivo": "assets/m/BC-7502FC.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/visicoolers-750-litros-fan-cooling-bc7502fc-ilumi/",
+  "titulo": "Visicooler 750L BC7502FC Fan Cooling - Perú"
+ },
+ "BC-9502FC": {
+  "codigo": "BC-9502FC",
+  "archivo": "assets/m/BC-9502FC.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/visicoolers-950-litros-fan-cooling-bc9502fc-ilumi/",
+  "titulo": "Visicooler 950L BC9502FC Fan Cooling - Perú"
+ },
+ "BC-9502SD": {
+  "codigo": "BC-9502SD",
+  "archivo": "assets/m/BC-9502SD.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/visicoolers-950-litros-fan-cooling-bc9502sd-ilumi/",
+  "titulo": "Visicooler 950L BC9502SD Fan Cooling - Perú"
+ },
+ "BC-15003FC": {
+  "codigo": "BC-15003FC",
+  "archivo": "assets/m/BC-15003FC.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/visicoolers-1500-litros-bc15003fc-ilumi/",
+  "titulo": "Visicoolers 1,500 Litros BC15003FC | Industrias Miyagui"
+ },
+ "TFI-1700DG": {
+  "codigo": "TFI-1700DG",
+  "archivo": "assets/m/TFI-1700DG.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/congeladora-tapa-dura-170-litros-tfi-1700dg-ilumi/",
+  "titulo": "Congeladora Tapa Dura 170L TFI-1700dg | Perú"
+ },
+ "TFI-2200DG": {
+  "codigo": "TFI-2200DG",
+  "archivo": "assets/m/TFI-2200DG.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/congeladora-tapa-dura-220-litros-tfi-2200dg-ilumi/",
+  "titulo": "Congeladora Tapa Dura 220L TFI-2200DG | Perú"
+ },
+ "TFI-3200FC": {
+  "codigo": "TFI-3200FC",
+  "archivo": "assets/m/TFI-3200FC.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/congeladora-tapa-dura-320-litros-fan-cooling-tfi-3200fc-ilumi/",
+  "titulo": "Congeladora Tapa Dura 320L Fan Cooling TFI-3200FC"
+ },
+ "TFI-3400DG": {
+  "codigo": "TFI-3400DG",
+  "archivo": "assets/m/TFI-3400DG.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/congeladora-tapa-dura-340-litros-tfi3400dg-ilumi/",
+  "titulo": "Congeladora Tapa Dura 340L TFI3400dg | Perú"
+ },
+ "TFI-3400WH": {
+  "codigo": "TFI-3400WH",
+  "archivo": "assets/m/TFI-3400WH.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/congeladora-tapa-dura-340-litros-tfi3400wh-ilumi/",
+  "titulo": "Congeladora Tapa Dura 340L TFI3400wh | Perú"
+ },
+ "TFI-4402DG": {
+  "codigo": "TFI-4402DG",
+  "archivo": "assets/m/TFI-4402DG.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/congeladora-tapa-dura-440-litros-tfi4402dg-ilumi/",
+  "titulo": "Congeladora Tapa Dura 440L TFI4402dg | Perú"
+ },
+ "TFI-4402WH": {
+  "codigo": "TFI-4402WH",
+  "archivo": "assets/m/TFI-4402WH.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/congeladora-tapa-dura-440-litros-tfi4402wh-ilumi/",
+  "titulo": "Congeladora Tapa Dura 440L TFI4402wh | Perú"
+ },
+ "TFI-5502DG": {
+  "codigo": "TFI-5502DG",
+  "archivo": "assets/m/TFI-5502DG.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/congeladora-tapa-dura-550-litros-tfi5502dg-ilumi/",
+  "titulo": "Congeladora Tapa Dura 550L TFI5502dg | Perú"
+ },
+ "TFI-8002DG": {
+  "codigo": "TFI-8002DG",
+  "archivo": "assets/m/TFI-8002DG.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/congeladora-tapa-dura-800-litros-tfi8002dg-ilumi/",
+  "titulo": "Congeladora Tapa Dura 800L TFI8002dg | Perú"
+ },
+ "TFI-10002DG": {
+  "codigo": "TFI-10002DG",
+  "archivo": "assets/m/TFI-10002DG.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/congeladora-tapa-dura-1000-litros-tfi10002dg-ilumi/",
+  "titulo": "Congeladora Tapa Dura 1000L TFI10002dg | Perú"
+ },
+ "TF-1100": {
+  "codigo": "TF-1100",
+  "archivo": "assets/m/TF-1100.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/congeladora-tapa-vidrio-110-litros-tf-1100-ilumi/",
+  "titulo": "Congeladora Tapa Vidrio 110L TF-1100 | Perú"
+ },
+ "TF-1600": {
+  "codigo": "TF-1600",
+  "archivo": "assets/m/TF-1600.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/congeladora-tapa-vidrio-160-litros-tf-1600-ilumi/",
+  "titulo": "Congeladora Tapa Vidrio 160L TF-1600 | Perú"
+ },
+ "TF-2600": {
+  "codigo": "TF-2600",
+  "archivo": "assets/m/TF-2600.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/congeladora-tapa-vidrio-260-litros-tf2600-ilumi/",
+  "titulo": "Congeladora Tapa Vidrio 260L TF2600 | Perú"
+ },
+ "TF-3600": {
+  "codigo": "TF-3600",
+  "archivo": "assets/m/TF-3600.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/congeladora-tapa-vidrio-360-litros-tf3600-ilumi/",
+  "titulo": "Congeladora Tapa Vidrio 360L TF3600 | Perú"
+ },
+ "TF-4600": {
+  "codigo": "TF-4600",
+  "archivo": "assets/m/TF-4600.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/congeladora-tapa-vidrio-460-litros-tf4600-ilumi/",
+  "titulo": "Congeladora Tapa Vidrio 460L TF4600 | Perú"
+ },
+ "TF-3200TG": {
+  "codigo": "TF-3200TG",
+  "archivo": "assets/m/TF-3200TG.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/congeladora-con-vitrina-superior-6-pozas-tf3200tg-ilumi/",
+  "titulo": "Congeladora 6 Pozas TF3200tg | Vitrina Superior | Perú"
+ },
+ "TF-4200TG": {
+  "codigo": "TF-4200TG",
+  "archivo": "assets/m/TF-4200TG.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/congeladora-con-vitrina-superior-9-pozas-tf4200tg-ilumi/",
+  "titulo": "Congeladora 9 Pozas TF4200tg | Vitrina Superior | Perú"
+ },
+ "TF-5200TG": {
+  "codigo": "TF-5200TG",
+  "archivo": "assets/m/TF-5200TG.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/congeladora-con-vitrina-superior-12-pozas-tf5200tg-ilumi/",
+  "titulo": "Congeladora 12 Pozas TF5200tg | Vitrina Superior | Perú"
+ },
+ "TF-4500GD": {
+  "codigo": "TF-4500GD",
+  "archivo": "assets/m/TF-4500GD.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/congeladora-vertical-450-litros-tf4500gd-ilumi/",
+  "titulo": "Congeladora Vertical 450 Litros Ilumi para Exhibición"
+ },
+ "TF-3100H": {
+  "codigo": "TF-3100H",
+  "archivo": "assets/m/TF-3100H.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/congeladora-hielera-310-litros-tf3100h-ilumi/",
+  "titulo": "Congeladora Hielera 310L TF3100H - Perú"
+ },
+ "TF-2800V": {
+  "codigo": "TF-2800V",
+  "archivo": "assets/m/TF-2800V.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/congeladora-vertical-280-litros-tf2800v-ilumi/",
+  "titulo": "Congeladora Vertical 280L TF2800V - Perú"
+ },
+ "AF-7000FC": {
+  "codigo": "AF-7000FC",
+  "archivo": "assets/m/AF-7000FC.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/armarios-frigorifico-fan-cooling-af7000fc-ilumi/",
+  "titulo": "Armario Frigorífico AF7000FC 500L Fan Cooling"
+ },
+ "AF-9000FC": {
+  "codigo": "AF-9000FC",
+  "archivo": "assets/m/AF-9000FC.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/armarios-frigorifico-fan-cooling-af9000fc-ilumi/",
+  "titulo": "Armario Frigorífico AF9000FC 700L Fan Cooling"
+ },
+ "AF-11002FC": {
+  "codigo": "AF-11002FC",
+  "archivo": "assets/m/AF-11002FC.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/armarios-frigorifico-fan-cooling-af11002fc-ilumi/",
+  "titulo": "Armario Frigorífico AF11002FC 1000L Fan Cooling"
+ },
+ "AF-11004FC": {
+  "codigo": "AF-11004FC",
+  "archivo": "assets/m/AF-11004FC.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/armarios-frigorifico-fan-cooling-af11004fc-ilumi/",
+  "titulo": "Armario Frigorífico AF11004FC 1000L Fan Cooling"
+ },
+ "AF-16003FC": {
+  "codigo": "AF-16003FC",
+  "archivo": "assets/m/AF-16003FC.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/armarios-frigorifico-fan-cooling-af16003fc-ilumi/",
+  "titulo": "Armario Frigorífico AF16003FC 1600L Fan Cooling"
+ },
+ "AF-14002FC": {
+  "codigo": "AF-14002FC",
+  "archivo": "assets/m/AF-14002FC.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/armarios-frigorifico-fan-cooling-af14002fc-ilumi/",
+  "titulo": "Armario Frigorífico AF14002FC 1400L Fan Cooling"
+ },
+ "MG-2SD": {
+  "codigo": "MG-2SD",
+  "archivo": "assets/m/MG-2SD.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/mesa-refrigerada-mg2sd-ilumi/",
+  "titulo": "Mesa Refrigerada MG2SD Acero Inoxidable - Perú"
+ },
+ "MG-2SDFC": {
+  "codigo": "MG-2SDFC",
+  "archivo": "assets/m/MG-2SDFC.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/mesa-refrigerada-mg2sdfc-ilumi/",
+  "titulo": "Mesa Refrigerada MG2SDFC Congeladora -20°C"
+ },
+ "MG-3SD": {
+  "codigo": "MG-3SD",
+  "archivo": "assets/m/MG-3SD.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/mesa-refrigerada-mg3sd-ilumi/",
+  "titulo": "Mesa Refrigerada MG3SD Acero Inoxidable - Perú"
+ },
+ "MG-3SDFC": {
+  "codigo": "MG-3SDFC",
+  "archivo": "assets/m/MG-3SDFC.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/mesa-refrigerada-mg3sdfc-ilumi/",
+  "titulo": "Mesa Refrigerada MG3SDFC Congeladora -20°C"
+ },
+ "MG-2GD": {
+  "codigo": "MG-2GD",
+  "archivo": "assets/m/MG-2GD.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/mesa-refrigerada-mg2gd-ilumi/",
+  "titulo": "Mesa Refrigerada MG2GD Acero Inoxidable - Perú"
+ },
+ "MG-3GD": {
+  "codigo": "MG-3GD",
+  "archivo": "assets/m/MG-3GD.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/mesa-refrigerada-mg3gd-ilumi/",
+  "titulo": "Mesa Refrigerada MG3GD Acero Inoxidable - Perú"
+ },
+ "SLD-2TS": {
+  "codigo": "SLD-2TS",
+  "archivo": "assets/m/SLD-2TS.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/mesa-ensaladera-sld2ts-ilumi/",
+  "titulo": "Mesa Ensaladera SLD2TS Acero Inox 2°C a 8°C"
+ },
+ "SLD-3TS": {
+  "codigo": "SLD-3TS",
+  "archivo": "assets/m/SLD-3TS.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/mesa-ensaladera-sld3ts-ilumi/",
+  "titulo": "Mesa Ensaladera SLD3TS Acero Inox 2°C a 8°C"
+ },
+ "SLD-2SD": {
+  "codigo": "SLD-2SD",
+  "archivo": "assets/m/SLD-2SD.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/mesa-ensaladera-sld2sd-ilumi/",
+  "titulo": "Mesa Ensaladera SLD2SD Acero Inox con Pozas"
+ },
+ "SLD-3SD": {
+  "codigo": "SLD-3SD",
+  "archivo": "assets/m/SLD-3SD.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/mesa-ensaladera-sld3sd-ilumi/",
+  "titulo": "Mesa Ensaladera SLD3SD Acero Inox con Pozas"
+ },
+ "VRF-1250AI": {
+  "codigo": "VRF-1250AI",
+  "archivo": "assets/m/VRF-1250AI.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/vitrina-refrigerada-vrf1250ai-ilumi/",
+  "titulo": "Vitrina Refrigerada VRF1250AI Acero Inox Perú"
+ },
+ "VRF-1500AI": {
+  "codigo": "VRF-1500AI",
+  "archivo": "assets/m/VRF-1500AI.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/vitrina-refrigerada-vrf1500ai-ilumi/",
+  "titulo": "Vitrina Refrigerada VRF1500AI Acero Inox Perú"
+ },
+ "VRD-1250AI": {
+  "codigo": "VRD-1250AI",
+  "archivo": "assets/m/VRD-1250AI.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/vitrina-refrigerada-vrd1250ai-ilumi/",
+  "titulo": "Vitrina Refrigerada VRD1250AI Acero Inox Perú"
+ },
+ "VRD-1500AI": {
+  "codigo": "VRD-1500AI",
+  "archivo": "assets/m/VRD-1500AI.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/vitrina-refrigerada-vrd1500ai-ilumi/",
+  "titulo": "Vitrina Refrigerada VRD1500AI | Acero Inoxidable | Perú"
+ },
+ "VRFH-1000AI": {
+  "codigo": "VRFH-1000AI",
+  "archivo": "assets/m/VRFH-1000AI.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/vitrina-refrigerada-vrfh1000ai-ilumi/",
+  "titulo": "Vitrina Refrigerada VRFH1000AI Acero Inox Perú"
+ },
+ "VRFH-1250AI": {
+  "codigo": "VRFH-1250AI",
+  "archivo": "assets/m/VRFH-1250AI.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/vitrina-refrigerada-vrfh1250ai-ilumi/",
+  "titulo": "Vitrina Refrigerada VRFH1250AI Acero Inox Perú"
+ },
+ "VRFH-1500AI": {
+  "codigo": "VRFH-1500AI",
+  "archivo": "assets/m/VRFH-1500AI.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/vitrina-refrigerada-vrfh1500ai-ilumi/",
+  "titulo": "Vitrina Refrigerada VRFH1500AI Acero Inox Perú"
+ },
+ "VRDH-1250AI": {
+  "codigo": "VRDH-1250AI",
+  "archivo": "assets/m/VRDH-1250AI.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/vitrina-refrigerada-vrdh1250ai-ilumi/",
+  "titulo": "Vitrina Refrigerada VRDH1250AI | Acero Inoxidable | Perú"
+ },
+ "VRDH-1500AI": {
+  "codigo": "VRDH-1500AI",
+  "archivo": "assets/m/VRDH-1500AI.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/vitrina-refrigerada-vrdh1500ai-ilumi/",
+  "titulo": "Vitrina Refrigerada VRDH1500AI | Acero Inoxidable | Perú"
+ },
+ "MH-40": {
+  "codigo": "MH-40",
+  "archivo": "assets/m/MH-40.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/maquina-de-hielo-mh-40-ilumi/",
+  "titulo": "Máquina de Hielo MH-40 | 35 Kg al Día | Perú"
+ },
+ "MH-85": {
+  "codigo": "MH-85",
+  "archivo": "assets/m/MH-85.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/maquina-de-hielo-mh-85-ilumi/",
+  "titulo": "Máquina de Hielo MH-85 | 60 Kg al Día | Perú"
+ },
+ "MHA-20S": {
+  "codigo": "MHA-20S",
+  "archivo": "assets/m/MHA-20S.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/maquina-de-helados-artesanal-de-sobremesa-20-litros-mha20s-ilumi/",
+  "titulo": "Máquina de Helados Artesanal Sobremesa 20L MHA20S | Perú"
+ },
+ "MHA-20": {
+  "codigo": "MHA-20",
+  "archivo": "assets/m/MHA-20.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/maquina-de-helados-artesanal-20-litros-mha20-ilumi/",
+  "titulo": "Máquina de Helados Artesanal 20 Litros MHA20 | Perú"
+ },
+ "MHS-30S": {
+  "codigo": "MHS-30S",
+  "archivo": "assets/m/MHS-30S.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/maquina-de-helados-soft-sobremesa-30-litros-mhs30s-ilumi/",
+  "titulo": "Máquina de Helados Soft Sobremesa 30L MHS30S | Perú"
+ },
+ "MHS-25": {
+  "codigo": "MHS-25",
+  "archivo": "assets/m/MHS-25.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/maquina-de-helados-soft-25-litros-mhs25-ilumi/",
+  "titulo": "Máquina de Helados Soft 25 Litros MHS25 | Perú"
+ },
+ "MHS-25PC": {
+  "codigo": "MHS-25PC",
+  "archivo": "assets/m/MHS-25PC.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/maquina-de-helados-soft-pre-cooling-25-litros-mhs25pc-ilumi/",
+  "titulo": "Máquina de Helados Soft Pre Cooling 25L MHS25PC | Perú"
+ },
+ "BF-0545": {
+  "codigo": "BF-0545",
+  "archivo": "assets/m/BF-0545.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/abatidor-de-temperatura-de-5-bandejas-bf0545-ilumi/",
+  "titulo": "Abatidor de Temperatura 5 Bandejas BF0545 | Perú"
+ },
+ "BF-1045": {
+  "codigo": "BF-1045",
+  "archivo": "assets/m/BF-1045.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/abatidor-de-temperatura-10-bandejas-bf-1045-ilumi/",
+  "titulo": "Abatidor de Temperatura 10 Bandejas BF-1045 | Perú"
+ },
+ "DJ-182": {
+  "codigo": "DJ-182",
+  "archivo": "assets/m/DJ-182.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/refresquera-2-tolvas-dj182-ilumi/",
+  "titulo": "Refresquera 2 Tolvas DJ182 | 30 Litros | Perú"
+ },
+ "CR-122": {
+  "codigo": "CR-122",
+  "archivo": "assets/m/CR-122.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/cremoladera-2-tolvas-cr122-ilumi/",
+  "titulo": "Cremoladera 2 Tolvas CR122 | 25 Litros | Perú"
+ },
+ "HC-5000": {
+  "codigo": "HC-5000",
+  "archivo": "assets/m/HC-5000.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/horno-convector-a-gas-5-repisas-hc5000-ilumi/",
+  "titulo": "Horno Convector a Gas 5 Repisas HC5000 | Perú"
+ },
+ "HC-10000": {
+  "codigo": "HC-10000",
+  "archivo": "assets/m/HC-10000.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/horno-convector-a-gas-10-repisas-hc10000-ilumi/",
+  "titulo": "Horno Convector a Gas 10 Repisas HC10000 | Perú"
+ },
+ "HCM-400": {
+  "codigo": "HCM-400",
+  "archivo": "assets/m/HCM-400.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/horno-convector-electrico-hcm400-ilumi/",
+  "titulo": "Horno Convector Eléctrico 4 Bandejas HCM400 | Miyagui"
+ },
+ "B-10L": {
+  "codigo": "B-10L",
+  "archivo": "assets/m/B-10L.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/batidora-industrial-10-litros-b-10l-ilumi/",
+  "titulo": "Batidora Industrial 10L B-10L | Acero Inox Perú"
+ },
+ "GF-900": {
+  "codigo": "GF-900",
+  "archivo": "assets/m/GF-900.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/freidora-industrial-a-gas-gf900-ilumi/",
+  "titulo": "Freidora Industrial a Gas GF900 | 36L Perú"
+ },
+ "VCM-66": {
+  "codigo": "VCM-66",
+  "archivo": "assets/m/VCM-66.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/vitrina-caliente-vcm66-ilumi/",
+  "titulo": "Vitrina Caliente VCM66 | Exhibe y Mantén Caliente | Perú"
+ },
+ "VCM-96": {
+  "codigo": "VCM-96",
+  "archivo": "assets/m/VCM-96.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/vitrina-caliente-vcm96-ilumi/",
+  "titulo": "Vitrina Caliente VCM96 | Exhibe y Mantén Caliente | Perú"
+ },
+ "VCM-120": {
+  "codigo": "VCM-120",
+  "archivo": "assets/m/VCM-120.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/vitrina-caliente-vcm120-ilumi/",
+  "titulo": "Vitrina Caliente VCM120 | Exhibe y Mantén Caliente | Perú"
+ },
+ "VF2PS-1400V": {
+  "codigo": "VF2PS-1400V",
+  "archivo": "assets/m/VF2PS-1400V.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/armarios-frigorifico-vf2ps1400v-ventus/",
+  "titulo": "Armario Frigorífico VF2PS1400v | Perú"
+ },
+ "VMR3PS-420V": {
+  "codigo": "VMR3PS-420V",
+  "archivo": "assets/m/VMR3PS-420V.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/mesa-refrigerada-vmr3ps-420v-ventus/",
+  "titulo": "Mesa Refrigerada VMR3PS-420V | Perú"
+ },
+ "VMRSL-375": {
+  "codigo": "VMRSL-375",
+  "archivo": "assets/m/VMRSL-375.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/mesa-ensaladera-vmrsl-375-ventus/",
+  "titulo": "Mesa Ensaladera VMRSL-375 | Industrias Miyagui"
+ },
+ "VMH-50C": {
+  "codigo": "VMH-50C",
+  "archivo": "assets/m/VMH-50C.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/maquina-de-hielo-vmh-50c-ventus/",
+  "titulo": "Máquina de Hielo VMH-50C Acero Inoxidable Perú"
+ },
+ "VMH-80C": {
+  "codigo": "VMH-80C",
+  "archivo": "assets/m/VMH-80C.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/maquina-de-hielo-vmh-80c-ventus/",
+  "titulo": "Máquina de Hielo VMH-80C Acero Inoxidable Perú"
+ },
+ "VJ-181": {
+  "codigo": "VJ-181",
+  "archivo": "assets/m/VJ-181.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/refresquera-1-tolva-vj-181-ventus/",
+  "titulo": "Refresquera 1 Tolva VJ-181 18L en Perú - Acero Inoxidable"
+ },
+ "VG-123": {
+  "codigo": "VG-123",
+  "archivo": "assets/m/VG-123.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/cremoladera-3-tolvas-vg123-ventus/",
+  "titulo": "Cremoladera 3 Tolvas VG123 en Perú - Acero Inoxidable"
+ },
+ "LG-380TC": {
+  "codigo": "LG-380TC",
+  "archivo": "assets/m/LG-380TC.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/visicoolers-380-litros-turbo-cooling-lg-380tc-ventus/",
+  "titulo": "Visicooler 380L Turbo Cooling LG-380TC | Perú"
+ },
+ "LG-900TC": {
+  "codigo": "LG-900TC",
+  "archivo": "assets/m/LG-900TC.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/visicoolers-900-litros-turbo-cooling-lg-900tc-ventus/",
+  "titulo": "Visicooler 900L Turbo Cooling LG-900TC en Perú"
+ },
+ "LG-380TCG": {
+  "codigo": "LG-380TCG",
+  "archivo": "assets/m/LG-380TCG.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/visicoolers-380-litros-turbo-cooling-lg-380tcg-ventus/",
+  "titulo": "Visicooler 380L Turbo Cooling LG-380TCG | Perú"
+ },
+ "LG-750TCG": {
+  "codigo": "LG-750TCG",
+  "archivo": "assets/m/LG-750TCG.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/visicoolers-750-litros-turbo-cooling-lg-750tcg-ventus/",
+  "titulo": "Visicooler 750L Turbo Cooling LG-750TCG | Perú"
+ },
+ "VFSG-071": {
+  "codigo": "VFSG-071",
+  "archivo": "assets/m/VFSG-071.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/freidora-sobremesa-a-gas-vfsg-071-ventus/",
+  "titulo": "Freidora Sobremesa a Gas VFSG-071 Perú"
+ },
+ "VFSG-072": {
+  "codigo": "VFSG-072",
+  "archivo": "assets/m/VFSG-072.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/freidora-a-gas-sobremesa-doble-vfsg-072-ventus/",
+  "titulo": "Freidora a Gas Sobremesa Doble VFSG-072 Perú"
+ },
+ "VHC-01": {
+  "codigo": "VHC-01",
+  "archivo": "assets/m/VHC-01.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/horno-convector-electrico-vhc-01a-ventus/",
+  "titulo": "Horno Convector Eléctrico VHC-01A | Perú"
+ },
+ "VHC-04": {
+  "codigo": "VHC-04",
+  "archivo": "assets/m/VHC-04.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/horno-convector-electrico-vhc-04a-ventus/",
+  "titulo": "Horno Convector Eléctrico VHC-04A | Perú"
+ },
+ "VHC-08": {
+  "codigo": "VHC-08",
+  "archivo": "assets/m/VHC-08.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/horno-convector-electrico-vhc-08a-ventus/",
+  "titulo": "Horno Convector Eléctrico VHC-08A | Perú"
+ },
+ "VAM-20L": {
+  "codigo": "VAM-20L",
+  "archivo": "assets/m/VAM-20L.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/amasadora-industrial-20-litros-vam20-ventus/",
+  "titulo": "Amasadora Industrial 20 Litros VAM20 | Perú"
+ },
+ "LAR-04MB": {
+  "codigo": "LAR-04MB",
+  "archivo": "assets/m/LAR-04MB.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/licuadora-comercial-4-litros-lar-04mb-ventus/",
+  "titulo": "Licuadora Comercial 4 Litros LAR-04MB | Perú"
+ },
+ "LAR-08MB": {
+  "codigo": "LAR-08MB",
+  "archivo": "assets/m/LAR-08MB.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/licuadora-comercial-8-litros-lar-08mb-ventus/",
+  "titulo": "Licuadora Comercial 8 Litros LAR-08MB | Perú"
+ },
+ "V-250T": {
+  "codigo": "V-250T",
+  "archivo": "assets/m/V-250T.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/rebanadora-de-embutidos-v-250t-ventus/",
+  "titulo": "Rebanadora de Embutidos V-250T Ventus | Miyagui"
+ },
+ "V-300T": {
+  "codigo": "V-300T",
+  "archivo": "assets/m/V-300T.webp",
+  "pagina": "https://industriasmiyagui.com/equipo/rebanadora-de-embutidos-v-300t-ventus/",
+  "titulo": "Rebanadora de Embutidos V-300T | Perú"
+ }
+}
