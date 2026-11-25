@@ -45,7 +45,7 @@ small{color:#778}
     document.getElementById('g').onclick = function () {
       var u = document.getElementById('u').value.trim();
       if (!ok(u)) { msg.textContent = 'Esa URL no es de una aplicación web de Apps Script (debe terminar en /exec).'; return; }
-      localStorage.setItem(K, u); url = u; pintar();
+      localStorage.setItem(K, u); url = u; pintar.cambiando = false; pintar();
     };
   }
   function pintar() {
@@ -55,8 +55,9 @@ small{color:#778}
       (inst ? '<button class="btn g" id="i">⬇ Instalar en este equipo</button>' : (!standalone ? '<p><small>Para el ícono: menú del navegador → «Instalar app» o «Agregar a la pantalla de inicio».</small></p>' : '')) +
       '<button class="btn o" id="c">Cambiar URL</button>';
     if (inst) document.getElementById('i').onclick = function () { inst.prompt(); inst.userChoice.then(function () { inst = null; pintar(); }); };
-    document.getElementById('c').onclick = configurar;
-    if (standalone || q.get('app')) setTimeout(function () { location.href = url; }, 400);
+    document.getElementById('c').onclick = function () { pintar.cambiando = true; configurar(); };
+    // Siempre abre el Panel directo (ícono, acceso directo o enlace); ?config=1 para ver esta pantalla
+    if (!q.has('config') && !pintar.cambiando) setTimeout(function () { location.replace(url); }, 300);
   }
   pintar();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
