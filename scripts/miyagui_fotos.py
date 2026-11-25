@@ -100,7 +100,7 @@ def main():
             continue
         cand = [f for f in fichas if re.search(r"(?<![A-Z0-9])" + re.escape(c) + r"(?![0-9])", f["clave"])]
         if not cand:
-            cand = [f for f in fichas if c in f["clave"]]
+            cand = [f for f in fichas if re.search(re.escape(c) + r"(?![0-9])", f["clave"])]
         if not cand or not cand[0]["imgs"]:
             continue
         f = cand[0]

@@ -1,16 +1,4 @@
 {
- "DKE-7L": {
-  "codigo": "DKE-7L",
-  "archivo": "assets/m/DKE-7L.webp",
-  "pagina": "https://industriasmiyagui.com/equipo/maquina-churrera-manual-dke-7l-dakota/",
-  "titulo": "Máquina Churrera Manual DKE-7L | 10L | Perú"
- },
- "DK-800": {
-  "codigo": "DK-800",
-  "archivo": "assets/m/DK-800.webp",
-  "pagina": "https://industriasmiyagui.com/equipo/licuadora-encapsulada-dk-8001-dakota/",
-  "titulo": "Licuadora Encapsulada DK-8001 | 1800W | Perú"
- },
  "BC-2900": {
   "codigo": "BC-2900",
   "archivo": "assets/m/BC-2900.webp",
@@ -215,42 +203,6 @@
   "pagina": "https://industriasmiyagui.com/equipo/congeladora-vertical-280-litros-tf2800v-ilumi/",
   "titulo": "Congeladora Vertical 280L TF2800V - Perú"
  },
- "AF-7000FC": {
-  "codigo": "AF-7000FC",
-  "archivo": "assets/m/AF-7000FC.webp",
-  "pagina": "https://industriasmiyagui.com/equipo/armarios-frigorifico-fan-cooling-af7000fc-ilumi/",
-  "titulo": "Armario Frigorífico AF7000FC 500L Fan Cooling"
- },
- "AF-9000FC": {
-  "codigo": "AF-9000FC",
-  "archivo": "assets/m/AF-9000FC.webp",
-  "pagina": "https://industriasmiyagui.com/equipo/armarios-frigorifico-fan-cooling-af9000fc-ilumi/",
-  "titulo": "Armario Frigorífico AF9000FC 700L Fan Cooling"
- },
- "AF-11002FC": {
-  "codigo": "AF-11002FC",
-  "archivo": "assets/m/AF-11002FC.webp",
-  "pagina": "https://industriasmiyagui.com/equipo/armarios-frigorifico-fan-cooling-af11002fc-ilumi/",
-  "titulo": "Armario Frigorífico AF11002FC 1000L Fan Cooling"
- },
- "AF-11004FC": {
-  "codigo": "AF-11004FC",
-  "archivo": "assets/m/AF-11004FC.webp",
-  "pagina": "https://industriasmiyagui.com/equipo/armarios-frigorifico-fan-cooling-af11004fc-ilumi/",
-  "titulo": "Armario Frigorífico AF11004FC 1000L Fan Cooling"
- },
- "AF-16003FC": {
-  "codigo": "AF-16003FC",
-  "archivo": "assets/m/AF-16003FC.webp",
-  "pagina": "https://industriasmiyagui.com/equipo/armarios-frigorifico-fan-cooling-af16003fc-ilumi/",
-  "titulo": "Armario Frigorífico AF16003FC 1600L Fan Cooling"
- },
- "AF-14002FC": {
-  "codigo": "AF-14002FC",
-  "archivo": "assets/m/AF-14002FC.webp",
-  "pagina": "https://industriasmiyagui.com/equipo/armarios-frigorifico-fan-cooling-af14002fc-ilumi/",
-  "titulo": "Armario Frigorífico AF14002FC 1400L Fan Cooling"
- },
  "MG-2SD": {
   "codigo": "MG-2SD",
   "archivo": "assets/m/MG-2SD.webp",
@@ -365,18 +317,6 @@
   "pagina": "https://industriasmiyagui.com/equipo/vitrina-refrigerada-vrdh1500ai-ilumi/",
   "titulo": "Vitrina Refrigerada VRDH1500AI | Acero Inoxidable | Perú"
  },
- "MH-40": {
-  "codigo": "MH-40",
-  "archivo": "assets/m/MH-40.webp",
-  "pagina": "https://industriasmiyagui.com/equipo/maquina-de-hielo-mh-40-ilumi/",
-  "titulo": "Máquina de Hielo MH-40 | 35 Kg al Día | Perú"
- },
- "MH-85": {
-  "codigo": "MH-85",
-  "archivo": "assets/m/MH-85.webp",
-  "pagina": "https://industriasmiyagui.com/equipo/maquina-de-hielo-mh-85-ilumi/",
-  "titulo": "Máquina de Hielo MH-85 | 60 Kg al Día | Perú"
- },
  "MHA-20S": {
   "codigo": "MHA-20S",
   "archivo": "assets/m/MHA-20S.webp",
@@ -419,18 +359,6 @@
   "pagina": "https://industriasmiyagui.com/equipo/abatidor-de-temperatura-10-bandejas-bf-1045-ilumi/",
   "titulo": "Abatidor de Temperatura 10 Bandejas BF-1045 | Perú"
  },
- "DJ-182": {
-  "codigo": "DJ-182",
-  "archivo": "assets/m/DJ-182.webp",
-  "pagina": "https://industriasmiyagui.com/equipo/refresquera-2-tolvas-dj182-ilumi/",
-  "titulo": "Refresquera 2 Tolvas DJ182 | 30 Litros | Perú"
- },
- "CR-122": {
-  "codigo": "CR-122",
-  "archivo": "assets/m/CR-122.webp",
-  "pagina": "https://industriasmiyagui.com/equipo/cremoladera-2-tolvas-cr122-ilumi/",
-  "titulo": "Cremoladera 2 Tolvas CR122 | 25 Litros | Perú"
- },
  "HC-5000": {
   "codigo": "HC-5000",
   "archivo": "assets/m/HC-5000.webp",
@@ -472,12 +400,6 @@
   "archivo": "assets/m/B-30L.webp",
   "pagina": "https://industriasmiyagui.com/equipo/batidora-industrial-30-litros-vb-30l-ventus/",
   "titulo": "Batidora Industrial 30 Litros VB-30L | Perú"
- },
- "GF-900": {
-  "codigo": "GF-900",
-  "archivo": "assets/m/GF-900.webp",
-  "pagina": "https://industriasmiyagui.com/equipo/freidora-industrial-a-gas-gf900-ilumi/",
-  "titulo": "Freidora Industrial a Gas GF900 | 36L Perú"
  },
  "VCM-66": {
   "codigo": "VCM-66",
@@ -526,12 +448,6 @@
   "archivo": "assets/m/VMH-80C.webp",
   "pagina": "https://industriasmiyagui.com/equipo/maquina-de-hielo-vmh-80c-ventus/",
   "titulo": "Máquina de Hielo VMH-80C Acero Inoxidable Perú"
- },
- "VJ-181": {
-  "codigo": "VJ-181",
-  "archivo": "assets/m/VJ-181.webp",
-  "pagina": "https://industriasmiyagui.com/equipo/refresquera-1-tolva-vj-181-ventus/",
-  "titulo": "Refresquera 1 Tolva VJ-181 18L en Perú - Acero Inoxidable"
  },
  "VG-123": {
   "codigo": "VG-123",
