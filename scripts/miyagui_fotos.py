@@ -76,7 +76,7 @@ def ficha(url):
     imgs = [i for i in dict.fromkeys(imgs) if not re.search(r"logo|icon|favicon|-\d{2,3}x\d{2,3}\.", i, re.I)]
     texto = re.sub(r"<[^>]+>", " ", t)
     modelo = re.findall(r"(?:Modelo|Código|SKU)\s*:?\s*([A-Z0-9][A-Z0-9\-\./ ]{2,25})", texto)
-    return {"url": url, "titulo": titulo, "modelos": modelo[:3], "imgs": imgs[:6], "clave": N(url.rstrip("/").rsplit("/", 1)[-1] + " " + titulo + " " + " ".join(modelo[:3]))}
+    return {"url": url, "titulo": titulo, "modelos": modelo[:3], "imgs": imgs[:6], "clave": (url.rstrip("/").rsplit("/", 1)[-1] + " " + titulo + " " + " ".join(modelo[:3])).upper()}
 
 
 def main():
@@ -98,9 +98,9 @@ def main():
         c = N(p["codigo"])
         if len(c) < 4:
             continue
-        cand = [f for f in fichas if re.search(r"(?<![A-Z0-9])" + re.escape(c) + r"(?![0-9])", f["clave"])]
-        if not cand:
-            cand = [f for f in fichas if re.search(re.escape(c) + r"(?![0-9])", f["clave"])]
+        # código exacto (con o sin guiones/espacios) y que no siga otra letra o número: BC-2900 ≠ BC-2900FC, DK-800 ≠ DK-8001
+        pat = r"(?<![A-Z0-9])" + r"[\s\-_./]?".join(map(re.escape, c)) + r"(?![A-Z0-9])"
+        cand = [f for f in fichas if re.search(pat, f["clave"])]
         if not cand or not cand[0]["imgs"]:
             continue
         f = cand[0]
