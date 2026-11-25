@@ -6,7 +6,8 @@
  * 2) Archivo + → HTML → nómbralo «Panel» (sin .html) → pega el archivo Panel.html.
  * 3) ⚙️ Configuración del proyecto → Propiedades del script → GEMINI_API_KEY = tu clave (la misma del catálogo).
  * 4) Elige la función «instalar» → Ejecutar (repara columnas, crea avisos y te manda un correo de prueba).
- * 5) Implementar → Nueva implementación → Aplicación web → Ejecutar como: Yo · Acceso: Solo yo → Implementar.
+ * 5) Implementar → Nueva implementación → Aplicación web → Ejecutar como: Yo · Acceso: Cualquier usuario → Implementar.
+ *    Ejecuta «crearClavePanel»: el registro muestra tu enlace personal con ?k= (es la llave del Panel).
  *    Abre la URL en tu celular → menú ⋮ → «Agregar a la pantalla principal».
  *
  * Calendario: llamadas de lunes a jueves · viernes revisión (pedidos, envíos, facturas) · sábado y domingo descanso.
@@ -61,6 +62,7 @@ function colsClientes_(cl) {
 //  Instalación y reparación
 // =====================================================================
 function instalar() {
+  if (!clavePanel_()) crearClavePanel();
   repararClientes();
   ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger('resumenDiario').timeBased().everyDays(1).atHour(7).inTimezone(ZONA).create();
@@ -383,11 +385,40 @@ function revisionSemanal() {
 // =====================================================================
 //  PANEL DE VENTAS (aplicación web)
 // =====================================================================
-function doGet() {
-  return HtmlService.createHtmlOutputFromFile('Panel')
+/**
+ * Acceso al Panel con CLAVE PRIVADA (no depende de qué cuenta de Google esté abierta en el navegador).
+ * Ejecuta «crearClavePanel» una vez: el registro muestra tu enlace personal (…/exec?k=CLAVE).
+ * Implementación: Ejecutar como «Yo» · Acceso «Cualquier usuario». Sin la clave, el Panel no abre.
+ */
+function clavePanel_() { return PropertiesService.getScriptProperties().getProperty('PANEL_CLAVE') || ''; }
+
+function crearClavePanel() {
+  const k = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '').slice(0, 8);
+  PropertiesService.getScriptProperties().setProperty('PANEL_CLAVE', k);
+  const url = ScriptApp.getService().getUrl();
+  Logger.log('Clave creada. Tu enlace personal del Panel (no lo compartas):\n' + (url ? url + '?k=' + k : '(publica la app y vuelve a ejecutar) ?k=' + k));
+}
+
+function doGet(e) {
+  const k = (e && e.parameter && e.parameter.k) || '';
+  const clave = clavePanel_();
+  if (!clave || k !== clave) {
+    return HtmlService.createHtmlOutput('<meta name="viewport" content="width=device-width,initial-scale=1"><body style="background:#0f1118;color:#e9ebf3;font-family:system-ui;text-align:center;padding:60px 20px"><h2>🔒 Panel de ventas</h2><p>Acceso restringido. Abre el Panel desde tu ícono o tu enlace personal.</p></body>')
+      .setTitle('Panel de ventas · Tecno Log IA');
+  }
+  const html = HtmlService.createHtmlOutputFromFile('Panel').getContent().replace('__CLAVE__', k);
+  return HtmlService.createHtmlOutput(html)
     .setTitle('Panel de ventas · Tecno Log IA')
     .setFaviconUrl(PANEL_URL + 'icon-32.png')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover');
+}
+
+/** Única puerta del Panel: valida la clave y llama a la función permitida. */
+function api(k, fn, args) {
+  if (!clavePanel_() || k !== clavePanel_()) throw new Error('Acceso no autorizado');
+  const ok = { panelDatos, panelRegistrar, panelRevision, panelEstadoPedido, panelProductos, panelIA, panelNotasIA };
+  if (!ok[fn]) throw new Error('Función no permitida');
+  return ok[fn].apply(null, args || []);
 }
 
 /** Datos del día: modo, indicadores y la cola de clientes en el orden de «Hoy». */
