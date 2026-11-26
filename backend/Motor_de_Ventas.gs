@@ -622,7 +622,7 @@ function ofertas_() {
   const cache = CacheService.getScriptCache(); const c = cache.get('ofertas');
   if (c) return JSON.parse(c);
   let o = [];
-  try { o = panelProductos().filter(p => p.o).slice(0, 25).map(p => p.n + ' (' + (p.m || '') + ', S/ ' + p.p + ', oferta ' + p.o + ')'); } catch (e) { /* sin catálogo */ }
+  try { o = panelProductos().filter(p => p.o).slice(0, 25).map(p => p.n + ' (' + (p.m || '') + ', S/ ' + (p.d > 0 ? p.d + ' precio distribuidor' : p.p) + ', oferta ' + p.o + ')'); } catch (e) { /* sin catálogo */ }
   cache.put('ofertas', JSON.stringify(o), 3600);
   return o;
 }
