@@ -416,7 +416,7 @@ function doGet(e) {
 /** Única puerta del Panel: valida la clave y llama a la función permitida. */
 function api(k, fn, args) {
   if (!clavePanel_() || k !== clavePanel_()) throw new Error('Acceso no autorizado');
-  const ok = { panelDatos, panelRegistrar, panelRevision, panelEstadoPedido, panelProductos, panelIA, panelNotasIA };
+  const ok = { panelDatos, panelRegistrar, panelRevision, panelEstadoPedido, panelProductos, panelIA, panelNotasIA, panelZonas, panelNuevoCliente };
   if (!ok[fn]) throw new Error('Función no permitida');
   return ok[fn].apply(null, args || []);
 }
@@ -468,6 +468,20 @@ function panelDatos() {
     mensajeVenta: String(cfg['Mensaje de venta'] || ''),
     cola,
   };
+}
+
+/** Panel: lista de zonas existentes (para el formulario de cliente nuevo). */
+function panelZonas() {
+  const cl = hoja_().getSheetByName('Clientes'), C = colsClientes_(cl);
+  const z = cl.getRange(2, C.zona, cl.getLastRow() - 1, 1).getValues().flat().map(String).filter(Boolean);
+  return Array.from(new Set(z)).sort();
+}
+/** Panel: registra un cliente nuevo en «Clientes» (Etapa «Nuevo»). */
+function panelNuevoCliente(x) {
+  const lock = LockService.getScriptLock(); lock.waitLock(15000);
+  try {
+    return altaCliente_(hoja_().getSheetByName('Clientes'), x, 'Alta desde el Panel', x.llamarHoy ? 'Cliente nuevo: primera llamada' : '');
+  } finally { lock.releaseLock(); }
 }
 
 /** Guarda el contacto en «Llamadas», actualiza la ficha del cliente y devuelve OK. */
@@ -630,4 +644,61 @@ function panelNotasIA(texto, c) {
   const o = gemini_(prompt, true);
   if (!REGLAS[o.resultado]) o.resultado = 'Volver a llamar';
   return { ok: true, resultado: o.resultado, comentario: String(o.comentario || texto).slice(0, 500), accion: String(o.accion || '').slice(0, 120), fecha: String(o.fecha || ''), productos: o.productos || [] };
+}
+
+// =====================================================================
+//  Alta de clientes nuevos (Panel y cotizaciones web). Mismo código en el Motor y en la API.
+// =====================================================================
+const normT_ = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+/** Zona más frecuente entre los clientes del mismo distrito / provincia / departamento. */
+function zonaDe_(h, v, x) {
+  const iz = h.indexOf('Zona'), cols = [['Distrito', 3], ['Provincia', 2], ['Departamento', 1]];
+  const lugares = [x.distrito, x.provincia, x.departamento].concat(String(x.ciudad || '').split(/[-,/·]/)).map(normT_).filter(Boolean);
+  if (iz < 0 || !lugares.length) return '';
+  const votos = {};
+  v.forEach(r => cols.forEach(([n, peso]) => {
+    const i = h.indexOf(n); if (i < 0 || !r[iz]) return;
+    if (lugares.indexOf(normT_(r[i])) >= 0) votos[r[iz]] = (votos[r[iz]] || 0) + peso;
+  }));
+  return Object.keys(votos).sort((a, b) => votos[b] - votos[a])[0] || '';
+}
+/** Crea el cliente (Etapa «Nuevo») o, si el RUC ya existe, solo agrega la nota. No toca columnas con fórmulas. */
+function altaCliente_(sh, x, nota, llamarHoy) {
+  const ruc = String(x.ruc || '').replace(/\D/g, '');
+  if (!/^(10|15|17|20)\d{9}$/.test(ruc)) throw new Error('RUC no válido (11 dígitos)');
+  if (!String(x.razon || '').trim()) throw new Error('Falta la razón social');
+  const h = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(s => String(s).trim());
+  const ids = sh.getRange(2, 1, Math.max(sh.getLastRow() - 1, 1), 1).getValues();
+  let ultima = 0; ids.forEach((r, i) => { if (String(r[0]).trim()) ultima = i + 1; });
+  const v = ultima ? sh.getRange(2, 1, ultima, h.length).getValues() : [];
+  const col = n => h.indexOf(n) + 1, iRuc = h.indexOf('RUC'), iNotas = h.indexOf('Notas');
+  const hoyTxt = Utilities.formatDate(new Date(), 'America/Lima', 'dd/MM');
+  const k = v.findIndex(r => String(r[iRuc]).replace(/\D/g, '') === ruc);
+  const marcarHoy = (fila, motivo) => {
+    if (col('Asignado el')) sh.getRange(fila, col('Asignado el')).setValue(new Date());
+    if (col('Motivo del día')) sh.getRange(fila, col('Motivo del día')).setValue('0 ' + motivo);
+  };
+  if (k >= 0) {
+    if (nota && iNotas >= 0) sh.getRange(k + 2, iNotas + 1).setValue([String(v[k][iNotas] || ''), hoyTxt + ' ' + nota].filter(Boolean).join(' | ').slice(0, 1500));
+    if (llamarHoy) marcarHoy(k + 2, llamarHoy);
+    return { ok: true, nuevo: false, id: v[k][0], razon: v[k][h.indexOf('Razón social')] };
+  }
+  const num = v.reduce((m, r) => Math.max(m, Number((String(r[0]).match(/^C-(\d+)/) || [0, 0])[1])), 0) + 1;
+  const id = 'C-' + String(num).padStart(4, '0');
+  const cel = String(x.celular || '').replace(/\D/g, '');
+  const wa = cel.length === 9 ? '51' + cel : cel;
+  const zona = String(x.zona || '').trim() || zonaDe_(h, v, x) || 'Por asignar';
+  const datos = {
+    'ID cliente': id, 'RUC': "'" + ruc, 'Razón social': String(x.razon).trim().toUpperCase(), 'Contacto': x.contacto,
+    'WhatsApp': wa ? "'" + wa : '', 'Celular 2': x.celular2 ? "'" + String(x.celular2).replace(/\D/g, '') : '', 'Teléfono fijo': x.fijo, 'Email': x.email,
+    'Dirección': x.direccion, 'Distrito': x.distrito, 'Provincia': x.provincia, 'Departamento': x.departamento, 'Zona': zona,
+    'Condición de pago': x.pago, 'Líneas de interés': x.lineas, 'Validación': wa ? 'Pendiente' : 'Sin celular',
+    'Notas': [hoyTxt + ' ' + (nota || 'Alta de cliente'), x.notas].filter(Boolean).join(' | '),
+    'Etapa': 'Nuevo', 'Próxima acción': x.accion || 'Primera llamada', 'Fecha próx. acción': new Date(), 'Prioridad (1-5)': 2,
+  };
+  const fila = ultima + 2;
+  Object.keys(datos).forEach(n => { const c = col(n); if (c && datos[n] !== undefined && datos[n] !== '') sh.getRange(fila, c).setValue(datos[n]); });
+  if (col('Fecha próx. acción')) sh.getRange(fila, col('Fecha próx. acción')).setNumberFormat('dd/mm/yyyy');
+  if (llamarHoy) marcarHoy(fila, llamarHoy);
+  return { ok: true, nuevo: true, id, zona };
 }

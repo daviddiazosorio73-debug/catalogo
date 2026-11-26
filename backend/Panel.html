@@ -55,13 +55,14 @@ textarea{min-height:76px;resize:vertical}
 .prod button{flex:0 0 auto}
 .mini{font-size:12px;color:var(--mut)}
 .load{opacity:.6;pointer-events:none}
+.form2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}.campo{display:flex;flex-direction:column;gap:4px}.campo span{font-size:12px;color:var(--mut)}.campo.full{grid-column:1/-1}@media(max-width:560px){.form2{grid-template-columns:1fr}}
 .sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
 .sheet>div{background:var(--card);width:min(760px,100%);max-height:88vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px}
 </style>
 </head>
 <body>
 <header>
-  <div class="top"><div><b>Panel de ventas</b><br><small id="fecha">Cargando…</small></div><button class="btn gold" id="recargar" style="padding:8px 12px">↻</button></div>
+  <div class="top"><div><b>Panel de ventas</b><br><small id="fecha">Cargando…</small></div><div style="display:flex;gap:8px"><button class="btn ghost" id="nuevoCli" style="padding:8px 12px">➕ Cliente nuevo</button><button class="btn gold" id="recargar" style="padding:8px 12px">↻</button></div></div>
   <div class="kpis">
     <div class="k"><span>Hoy</span><b id="kHoy">–</b></div>
     <div class="k"><span>En cola</span><b id="kCola">–</b></div>
@@ -252,6 +253,48 @@ function cotizar(){
   if (prods) lista(); else run('panelProductos').then(function(p){ prods = p; lista(); }).catch(function(){ $('#cl').textContent='No pude cargar el catálogo.'; });
 }
 
+// ---------- Cliente nuevo ----------
+var ZONAS = null;
+function nuevoCliente(){
+  var div = document.createElement('div'); div.className = 'sheet';
+  var f = function(id, t, extra){ return '<label class="campo"><span>'+t+'</span><input id="'+id+'" '+(extra||'')+'></label>'; };
+  div.innerHTML = '<div><div class="row"><b style="flex:3">➕ Registrar cliente nuevo</b><button class="btn ghost" id="nx" style="flex:0 0 auto">✕</button></div>'+
+    '<p class="mini">Queda en «Clientes» con Etapa «Nuevo». Si el RUC ya existe, solo se agrega la nota.</p>'+
+    '<div class="form2">'+
+      f('nRuc','RUC *','inputmode="numeric" maxlength="11" placeholder="20xxxxxxxxx"')+ f('nRazon','Razón social *')+
+      f('nCont','Persona de contacto')+ f('nCel','Celular / WhatsApp','inputmode="tel" placeholder="9xxxxxxxx"')+
+      f('nFijo','Teléfono fijo')+ f('nMail','Correo','type="email"')+
+      '<label class="campo full"><span>Dirección</span><input id="nDir"></label>'+
+      f('nDist','Distrito')+ f('nProv','Provincia')+ f('nDep','Departamento')+
+      '<label class="campo"><span>Zona</span><select id="nZona"><option value="">Automática (según ubicación)</option></select></label>'+
+      '<label class="campo"><span>Condición de pago</span><select id="nPago"><option value="">—</option><option>Contado</option><option>Contado adelantado</option><option>Contraentrega</option><option>Crédito</option></select></label>'+
+      f('nLin','Líneas de interés','placeholder="Ej.: Oster, línea blanca, gastronomía"')+
+      '<label class="campo full"><span>Notas</span><textarea id="nNot" rows="2" placeholder="Cómo llegó, qué necesita…"></textarea></label>'+
+      '<label class="campo full" style="flex-direction:row;gap:10px;align-items:center"><input type="checkbox" id="nHoy" checked style="width:22px;height:22px"><span style="font-size:15px;color:var(--ink)">Ponerlo en mi lista de hoy</span></label>'+
+    '</div><p id="nMsg" class="mini"></p>'+
+    '<div class="save" style="grid-template-columns:1fr 2fr"><button class="btn ghost" id="nCan">Cancelar</button><button class="btn red" id="nOk">Guardar cliente</button></div></div>';
+  document.body.appendChild(div);
+  var cerrar = function(){ div.remove(); };
+  $('#nx').onclick = cerrar; $('#nCan').onclick = cerrar;
+  $('#nRuc').oninput = function(){ this.value = this.value.replace(/\D/g,''); };
+  var pintarZonas = function(){ $('#nZona').innerHTML = '<option value="">Automática (según ubicación)</option>' + (ZONAS||[]).map(function(z){ return '<option>'+esc(z)+'</option>'; }).join(''); };
+  if (ZONAS) pintarZonas(); else run('panelZonas').then(function(z){ ZONAS = z; pintarZonas(); }).catch(function(){});
+  $('#nOk').onclick = function(){
+    var v = function(id){ return ($('#'+id).value||'').trim(); };
+    var x = { ruc: v('nRuc'), razon: v('nRazon'), contacto: v('nCont'), celular: v('nCel'), fijo: v('nFijo'), email: v('nMail'), direccion: v('nDir'),
+      distrito: v('nDist'), provincia: v('nProv'), departamento: v('nDep'), zona: v('nZona'), pago: v('nPago'), lineas: v('nLin'), notas: v('nNot'), llamarHoy: $('#nHoy').checked };
+    var msg = $('#nMsg');
+    if (!/^(10|15|17|20)\d{9}$/.test(x.ruc)) { msg.textContent = 'Revisa el RUC: 11 dígitos.'; msg.style.color = 'var(--red)'; return; }
+    if (!x.razon) { msg.textContent = 'Falta la razón social.'; msg.style.color = 'var(--red)'; return; }
+    var b = this; b.disabled = true; b.textContent = 'Guardando…';
+    run('panelNuevoCliente', x).then(function(r){
+      cerrar();
+      toast(r.nuevo ? '✓ ' + r.id + ' registrado · zona ' + r.zona : 'Ese RUC ya existe (' + r.id + '): se agregó la nota');
+      if (x.llamarHoy && D && D.modo === 'llamadas') cargar();
+    }).catch(function(e){ b.disabled = false; b.textContent = 'Guardar cliente'; msg.textContent = 'No se pudo guardar: ' + (e.message||e); msg.style.color = 'var(--red)'; });
+  };
+}
+
 // ---------- Viernes: revisión ----------
 var ESTADOS = ['Nuevo','Confirmado','Facturado','Despachado','Entregado','Pagado','Anulado'];
 function revision(){
@@ -272,6 +315,7 @@ function descanso(){
   $('#verCola').onclick = pintar;
 }
 $('#recargar').onclick = cargar;
+$('#nuevoCli').onclick = nuevoCliente;
 if (!(window.google && google.script && google.script.run)) {
   $('#fecha').textContent = 'Vista previa';
   $('#main').innerHTML = '<div class="vacio"><div class="big">📲</div><h1>Este archivo no se abre solo</h1><p class="sub">Pégalo en Apps Script como «Panel» y ábrelo desde la URL de la aplicación web (Implementar → Aplicación web) o desde el ícono del Panel.</p></div>';

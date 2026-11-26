@@ -6,6 +6,7 @@
  *
  *  GET  ?accion=productos        → configuración + productos visibles (lee la base maestra)
  *  GET  ?accion=ruc&ruc=20xxxxxx → datos públicos del cliente (razón social, dirección, ciudad)
+ *  POST {accion:'cotizacion', ...} → cliente nuevo a «Clientes» (Etapa «Nuevo») o nota al existente + lista «Hoy»
  *  POST {accion:'orden', ...}    → registra la orden, genera el PDF con la firma, lo envía por correo y lo pone en tu lista «Hoy»
  *  POST {accion:'carrito', ...}  → guarda el carrito del cliente identificado (para carritos abandonados)
  *  POST {accion:'eventos', ...}  → búsquedas, productos vistos y agregados (métricas)
@@ -40,6 +41,7 @@ function doPost(e) {
     const d = JSON.parse(e.postData.contents);
     if (d.accion === 'orden') return json_(registrarOrden_(d));
     if (d.accion === 'carrito') return json_(registrarCarrito_(d));
+    if (d.accion === 'cotizacion') return json_(registrarCotizacion_(d));
     if (d.accion === 'eventos') return json_(registrarEventos_(d));
     if (d.accion === 'asesor') return json_(asesor_(d));
     return json_({ ok: false, error: 'Acción no válida' });
@@ -275,6 +277,32 @@ function avisarHoy_(ruc, motivo) {
   return true;
 }
 
+// ---------- Cotizaciones web: el cliente nuevo entra a «Clientes» como «Nuevo» ----------
+function registrarCotizacion_(d) {
+  const ruc = String(d.ruc || '').replace(/\D/g, '');
+  if (!/^(10|15|17|20)\d{9}$/.test(ruc) || !Array.isArray(d.items)) return { ok: false, error: 'Datos incompletos' };
+  const cat = {}; productos_().forEach(p => cat[p.id] = p);
+  let total = 0;
+  const lineas = d.items.slice(0, 60).map(it => {
+    const p = cat[it.id]; const q = Math.max(1, Math.min(999, parseInt(it.cantidad, 10) || 1));
+    if (!p) return null; total += p.pvp * q; return p.codigo + ' × ' + q;
+  }).filter(Boolean);
+  total = Math.round(total * 100) / 100;
+  const numero = String(d.numero || '').slice(0, 30);
+  const nota = 'Cotización web ' + numero + ' · S/ ' + total.toFixed(2) + ': ' + lineas.join(', ');
+  const lock = LockService.getScriptLock(); lock.waitLock(15000);
+  let r;
+  try {
+    r = altaCliente_(SpreadsheetApp.openById(config_().hojaVentas).getSheetByName('Clientes'), {
+      ruc, razon: d.razon, contacto: d.contacto, celular: d.celular, email: d.email, ciudad: d.ciudad, notas: d.notas,
+      accion: 'Llamar: cotización web ' + numero,
+    }, nota.slice(0, 400), 'Cotización web ' + numero + ' · S/ ' + total.toFixed(2) + ': llamar y cerrar');
+  } finally { lock.releaseLock(); }
+  SpreadsheetApp.openById(BASE_MAESTRA).getSheetByName('Eventos').appendRow([new Date(), String(d.sesion || '').slice(0, 40), 'cotizacion',
+    (numero + ' · ' + (r.nuevo ? 'cliente nuevo ' : '') + r.id).slice(0, 120), total, "'" + ruc, String(d.origen || '').slice(0, 20)]);
+  return { ok: true, nuevo: r.nuevo, id: r.id };
+}
+
 // ---------- Carritos ----------
 function hojaCarritos_() { return SpreadsheetApp.openById(BASE_MAESTRA).getSheetByName('Carritos'); }
 
@@ -450,4 +478,61 @@ function instalar() {
   ScriptApp.newTrigger('revisarCarritos').timeBased().everyHours(1).create();
   ScriptApp.newTrigger('resumenDiario').timeBased().atHour(7).nearMinute(0).inTimezone(ZONA).everyDays(1).create();
   Logger.log('Listo: avisos de carritos cada hora y resumen diario a las 7 a. m. Asesor IA: ' + (PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY') ? 'con clave' : 'falta GEMINI_API_KEY'));
+}
+
+// =====================================================================
+//  Alta de clientes nuevos (Panel y cotizaciones web). Mismo código en el Motor y en la API.
+// =====================================================================
+const normT_ = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+/** Zona más frecuente entre los clientes del mismo distrito / provincia / departamento. */
+function zonaDe_(h, v, x) {
+  const iz = h.indexOf('Zona'), cols = [['Distrito', 3], ['Provincia', 2], ['Departamento', 1]];
+  const lugares = [x.distrito, x.provincia, x.departamento].concat(String(x.ciudad || '').split(/[-,/·]/)).map(normT_).filter(Boolean);
+  if (iz < 0 || !lugares.length) return '';
+  const votos = {};
+  v.forEach(r => cols.forEach(([n, peso]) => {
+    const i = h.indexOf(n); if (i < 0 || !r[iz]) return;
+    if (lugares.indexOf(normT_(r[i])) >= 0) votos[r[iz]] = (votos[r[iz]] || 0) + peso;
+  }));
+  return Object.keys(votos).sort((a, b) => votos[b] - votos[a])[0] || '';
+}
+/** Crea el cliente (Etapa «Nuevo») o, si el RUC ya existe, solo agrega la nota. No toca columnas con fórmulas. */
+function altaCliente_(sh, x, nota, llamarHoy) {
+  const ruc = String(x.ruc || '').replace(/\D/g, '');
+  if (!/^(10|15|17|20)\d{9}$/.test(ruc)) throw new Error('RUC no válido (11 dígitos)');
+  if (!String(x.razon || '').trim()) throw new Error('Falta la razón social');
+  const h = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(s => String(s).trim());
+  const ids = sh.getRange(2, 1, Math.max(sh.getLastRow() - 1, 1), 1).getValues();
+  let ultima = 0; ids.forEach((r, i) => { if (String(r[0]).trim()) ultima = i + 1; });
+  const v = ultima ? sh.getRange(2, 1, ultima, h.length).getValues() : [];
+  const col = n => h.indexOf(n) + 1, iRuc = h.indexOf('RUC'), iNotas = h.indexOf('Notas');
+  const hoyTxt = Utilities.formatDate(new Date(), 'America/Lima', 'dd/MM');
+  const k = v.findIndex(r => String(r[iRuc]).replace(/\D/g, '') === ruc);
+  const marcarHoy = (fila, motivo) => {
+    if (col('Asignado el')) sh.getRange(fila, col('Asignado el')).setValue(new Date());
+    if (col('Motivo del día')) sh.getRange(fila, col('Motivo del día')).setValue('0 ' + motivo);
+  };
+  if (k >= 0) {
+    if (nota && iNotas >= 0) sh.getRange(k + 2, iNotas + 1).setValue([String(v[k][iNotas] || ''), hoyTxt + ' ' + nota].filter(Boolean).join(' | ').slice(0, 1500));
+    if (llamarHoy) marcarHoy(k + 2, llamarHoy);
+    return { ok: true, nuevo: false, id: v[k][0], razon: v[k][h.indexOf('Razón social')] };
+  }
+  const num = v.reduce((m, r) => Math.max(m, Number((String(r[0]).match(/^C-(\d+)/) || [0, 0])[1])), 0) + 1;
+  const id = 'C-' + String(num).padStart(4, '0');
+  const cel = String(x.celular || '').replace(/\D/g, '');
+  const wa = cel.length === 9 ? '51' + cel : cel;
+  const zona = String(x.zona || '').trim() || zonaDe_(h, v, x) || 'Por asignar';
+  const datos = {
+    'ID cliente': id, 'RUC': "'" + ruc, 'Razón social': String(x.razon).trim().toUpperCase(), 'Contacto': x.contacto,
+    'WhatsApp': wa ? "'" + wa : '', 'Celular 2': x.celular2 ? "'" + String(x.celular2).replace(/\D/g, '') : '', 'Teléfono fijo': x.fijo, 'Email': x.email,
+    'Dirección': x.direccion, 'Distrito': x.distrito, 'Provincia': x.provincia, 'Departamento': x.departamento, 'Zona': zona,
+    'Condición de pago': x.pago, 'Líneas de interés': x.lineas, 'Validación': wa ? 'Pendiente' : 'Sin celular',
+    'Notas': [hoyTxt + ' ' + (nota || 'Alta de cliente'), x.notas].filter(Boolean).join(' | '),
+    'Etapa': 'Nuevo', 'Próxima acción': x.accion || 'Primera llamada', 'Fecha próx. acción': new Date(), 'Prioridad (1-5)': 2,
+  };
+  const fila = ultima + 2;
+  Object.keys(datos).forEach(n => { const c = col(n); if (c && datos[n] !== undefined && datos[n] !== '') sh.getRange(fila, c).setValue(datos[n]); });
+  if (col('Fecha próx. acción')) sh.getRange(fila, col('Fecha próx. acción')).setNumberFormat('dd/mm/yyyy');
+  if (llamarHoy) marcarHoy(fila, llamarHoy);
+  return { ok: true, nuevo: true, id, zona };
 }

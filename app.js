@@ -583,6 +583,9 @@
     const cots = store.get('tli_cots', []); cots.unshift({ numero, fecha: hoy.toISOString(), total, items }); store.set('tli_cots', cots.slice(0, 20));
     track('cotizacion', numero + ' · ' + d.ruc, Math.round(total));
     enviarEventos(); sincronizarCarrito(true);
+    // Registra la cotización: si el RUC es nuevo, el cliente entra a «Clientes» como «Nuevo» y a la lista «Hoy» del asesor
+    if (CFG.api) try { fetch(CFG.api, { method: 'POST', mode: 'no-cors', keepalive: true, headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ accion: 'cotizacion', numero, sesion: SES, origen: origen(), ruc: d.ruc, razon: d.razon, contacto: d.contacto, celular: d.celular, email: d.email || '', ciudad: d.ciudad || '', notas: d.notas || '', items }) }); } catch { /* sin conexión */ }
     const enlace = location.origin + location.pathname + '?d=cot&ruc=' + d.ruc + '&pedido=' + encodeURIComponent(items.map(x => x.id + '*' + x.cantidad).join(','));
     const wa = 'Hola Tecno Log IA, solicito la cotización ' + numero + ' (' + d.razon + ', RUC ' + d.ruc + '):\n' +
       items.map(x => '• ' + x.cantidad + ' × ' + S.porId[x.id].codigo + ' · ' + S.porId[x.id].nombre).join('\n') +
