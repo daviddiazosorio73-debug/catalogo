@@ -556,9 +556,23 @@ function panelEstadoPedido(filas, estado) {
 
 /** Productos del catálogo (para la cotización en 1 clic). */
 function panelProductos() {
-  const r = UrlFetchApp.fetch(CATALOGO_API + '?accion=productos', { muteHttpExceptions: true });
-  const d = JSON.parse(r.getContentText());
-  return (d.productos || []).filter(p => p.estado !== 'Agotado').map(p => ({ id: p.id, c: p.codigo, n: p.nombre, m: p.marca, k: p.categoria, p: p.pvp, o: p.oferta || '' }));
+  // Lee la base maestra directo (incluye el precio para distribuidores, que NO se publica en el catálogo web)
+  try {
+    const sh = SpreadsheetApp.openById(BASE_MAESTRA).getSheetByName('Productos');
+    const h = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(x => String(x).trim());
+    const c = n => h.findIndex(x => x.indexOf(n) === 0);
+    const iId = c('ID'), iCod = c('Código'), iMar = c('Marca'), iLis = c('Lista'), iCat = c('Categoría'), iNom = c('Producto'),
+      iPvp = c('PVP'), iEst = c('Estado'), iOfe = c('Oferta'), iPd = c('Precio distribuidor');
+    const num = x => typeof x === 'number' ? x : Number(String(x).replace(/,/g, '')) || 0;
+    return sh.getRange(2, 1, sh.getLastRow() - 1, h.length).getValues()
+      .filter(r => r[iId] && r[iEst] !== 'Oculto' && r[iEst] !== 'Agotado')
+      .map(r => ({ id: String(r[iId]), c: String(r[iCod]), n: String(r[iNom]), m: String(r[iMar] || ''), l: String(r[iLis] || ''), k: String(r[iCat] || ''),
+        p: num(r[iPvp]), d: iPd >= 0 ? num(r[iPd]) : 0, o: String(r[iOfe] || '') }));
+  } catch (e) {
+    const r = UrlFetchApp.fetch(CATALOGO_API + '?accion=productos', { muteHttpExceptions: true });
+    const d = JSON.parse(r.getContentText());
+    return (d.productos || []).filter(p => p.estado !== 'Agotado').map(p => ({ id: p.id, c: p.codigo, n: p.nombre, m: p.marca, l: p.lista, k: p.categoria, p: p.pvp, d: 0, o: p.oferta || '' }));
+  }
 }
 
 // =====================================================================
