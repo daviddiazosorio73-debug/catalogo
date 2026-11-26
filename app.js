@@ -1,7 +1,7 @@
 /* Tecno Log IA · Catálogo digital
  * Datos: API de Google Apps Script (config.js → api) o, si no hay API, data/productos.json.
  * Vistas: inicio (ofertas, marcas, categorías), resultados, producto (uno a la vez),
- * presentación (play), carrito y orden de compra con firma.
+ * presentación (play), carrito, cotización (PDF + WhatsApp) y orden de compra con firma.
  */
 (() => {
   'use strict';
@@ -402,6 +402,7 @@
         <small class="meta">PVP · incluye IGV · sujeto a stock</small>
         ${completa(ids)}
         <button class="btn red" data-orden ${ids.length ? '' : 'disabled'}>Generar orden de compra</button>
+        <button class="btn gold" data-cotizar ${ids.length ? '' : 'disabled'}>🧾 Solicitar cotización</button>
         <button class="btn ghost" data-ccerrar>Seguir comprando</button></div>`;
     $('#cart').hidden = false;
   }
@@ -527,7 +528,94 @@
       msg.textContent = 'No se pudo enviar (' + e.message + '). Intenta de nuevo o escríbenos por WhatsApp.'; msg.className = 'err';
     }
   }
+
+  // ---------- Cotización (sin firma; no compromete la compra) ----------
+  function abrirCotizar() {
+    cerrarCart();
+    const c = store.get('tli_cliente', {});
+    $('#co').innerHTML = `<div class="cobox">
+      <button class="pvclose" data-cocerrar aria-label="Cerrar">✕</button>
+      <h1 style="margin:0 0 4px">Solicitar cotización</h1>
+      <p class="meta" style="margin:0 0 14px">Solo distribuidores y mayoristas · Recibe tu cotización al instante, descárgala en PDF y envíala por WhatsApp. No es una orden de compra.</p>
+      <form class="form" id="fc" novalidate>
+        <label>RUC *<input name="ruc" inputmode="numeric" maxlength="11" required value="${esc(c.ruc || '')}" placeholder="20xxxxxxxxx"><span id="rucmsg" class="meta"></span></label>
+        <label>Razón social *<input name="razon" required value="${esc(c.razon || '')}"></label>
+        <label>Persona de contacto *<input name="contacto" required value="${esc(c.contacto || '')}"></label>
+        <label>Celular / WhatsApp *<input name="celular" inputmode="tel" required value="${esc(c.celular || '')}"></label>
+        <label>Correo (opcional)<input name="email" type="email" value="${esc(c.email || '')}"></label>
+        <label>Ciudad / distrito<input name="ciudad" value="${esc(c.ciudad || '')}"></label>
+        <label class="full">Notas (opcional)<input name="notas" placeholder="Ej.: para licitación, plazo de entrega, forma de pago…"></label>
+        <div class="full"><button class="btn gold" style="width:100%;font-size:18px">Ver mi cotización</button><p id="comsg" class="meta"></p></div>
+      </form></div>`;
+    $('#co').hidden = false; document.body.style.overflow = 'hidden';
+    const f = $('#fc'), ruc = f.ruc;
+    ruc.addEventListener('input', () => { ruc.value = ruc.value.replace(/\D/g, ''); if (ruc.value.length === 11) consultarRucEn(f, ruc.value); });
+    f.onsubmit = generarCotizacion;
+  }
+  async function consultarRucEn(f, ruc) {
+    const msg = $('#rucmsg');
+    if (!/^(10|15|17|20)\d{9}$/.test(ruc)) { msg.textContent = 'Revisa el RUC (11 dígitos).'; msg.className = 'err'; return; }
+    if (!CFG.api) return;
+    msg.textContent = 'Buscando…'; msg.className = 'meta';
+    try {
+      const r = await (await fetch(CFG.api + '?accion=ruc&ruc=' + ruc)).json();
+      if (r.ok && r.encontrado) {
+        if (!f.razon.value) f.razon.value = r.razon || '';
+        if (!f.ciudad.value) f.ciudad.value = r.ciudad || '';
+        msg.textContent = '✓ Cliente registrado'; msg.className = 'ok';
+      } else { msg.textContent = 'Cliente nuevo: completa tus datos.'; msg.className = 'meta'; }
+    } catch { msg.textContent = ''; }
+  }
+  function generarCotizacion(ev) {
+    ev.preventDefault();
+    const f = $('#fc'), msg = $('#comsg');
+    const d = Object.fromEntries(new FormData(f).entries());
+    if (['ruc', 'razon', 'contacto', 'celular'].some(k => !String(d[k] || '').trim())) { msg.textContent = 'Completa los campos marcados con *.'; msg.className = 'err'; return; }
+    if (!/^(10|15|17|20)\d{9}$/.test(d.ruc)) { msg.textContent = 'El RUC debe tener 11 dígitos.'; msg.className = 'err'; return; }
+    if (d.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email)) { msg.textContent = 'Revisa tu correo.'; msg.className = 'err'; return; }
+    store.set('tli_cliente', Object.assign(cliente(), { ruc: d.ruc, razon: d.razon, contacto: d.contacto, celular: d.celular, email: d.email || cliente().email || '', ciudad: d.ciudad || cliente().ciudad || '' }));
+    const hoy = new Date(), dias = Number(S.config.validez || 7);
+    const vence = new Date(hoy.getTime() + dias * 864e5);
+    const p2 = n => String(n).padStart(2, '0');
+    const numero = 'COT-' + String(hoy.getFullYear()).slice(2) + p2(hoy.getMonth() + 1) + p2(hoy.getDate()) + '-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+    const items = Object.entries(S.cart).filter(([id]) => S.porId[id]).map(([id, cantidad]) => ({ id, cantidad }));
+    const total = totalCart();
+    const cots = store.get('tli_cots', []); cots.unshift({ numero, fecha: hoy.toISOString(), total, items }); store.set('tli_cots', cots.slice(0, 20));
+    track('cotizacion', numero + ' · ' + d.ruc, Math.round(total));
+    enviarEventos(); sincronizarCarrito(true);
+    const enlace = location.origin + location.pathname + '?d=cot&ruc=' + d.ruc + '&pedido=' + encodeURIComponent(items.map(x => x.id + '*' + x.cantidad).join(','));
+    const wa = 'Hola Tecno Log IA, solicito la cotización ' + numero + ' (' + d.razon + ', RUC ' + d.ruc + '):\n' +
+      items.map(x => '• ' + x.cantidad + ' × ' + S.porId[x.id].codigo + ' · ' + S.porId[x.id].nombre).join('\n') +
+      '\nTotal referencial: ' + money(total) + ' (inc. IGV)' + (d.notas ? '\nNotas: ' + d.notas : '') + '\nVer: ' + enlace;
+    const fmt = x => x.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    $('#co').innerHTML = `<div class="cobox">
+      <div class="noprint" style="display:flex;justify-content:flex-end"><button class="pvclose" style="position:static" data-cocerrar aria-label="Cerrar">✕</button></div>
+      <article class="cotdoc" id="cotdoc">
+        <header><img src="assets/logo-wordmark.png" alt="Tecno Log IA"><div><b>COTIZACIÓN</b><br>N° ${esc(numero)}</div></header>
+        <p class="rib">SOLO PARA DISTRIBUIDORES Y MAYORISTAS</p>
+        <div class="cgrid">
+          <div><span>Cliente</span><b>${esc(d.razon)}</b></div><div><span>RUC</span><b>${esc(d.ruc)}</b></div>
+          <div><span>Contacto</span><b>${esc(d.contacto)}</b></div><div><span>Celular</span><b>${esc(d.celular)}</b></div>
+          <div><span>Fecha</span><b>${fmt(hoy)}</b></div><div><span>Válida hasta</span><b>${fmt(vence)}</b></div>
+        </div>
+        <table><thead><tr><th>Código</th><th>Descripción</th><th>Cant.</th><th>P. unit.</th><th>Subtotal</th></tr></thead><tbody>
+          ${items.map(x => { const p = S.porId[x.id]; return `<tr><td>${esc(p.codigo)}</td><td>${esc(p.nombre)}${p.marca ? ' · ' + esc(p.marca) : ''}</td><td>${x.cantidad}</td><td>${money(p.pvp)}</td><td>${money(p.pvp * x.cantidad)}</td></tr>`; }).join('')}
+        </tbody><tfoot><tr><td colspan="4">TOTAL (incluye IGV)</td><td>${money(total)}</td></tr></tfoot></table>
+        ${d.notas ? `<p><b>Notas:</b> ${esc(d.notas)}</p>` : ''}
+        <p class="cond">Precios en soles, incluyen IGV. Válida ${dias} días o hasta agotar stock. Sujeta a confirmación de stock, condiciones de pago y despacho por Tecno Log IA. Esta cotización no es una orden de compra.</p>
+        <p class="cond">Tecno Log IA · WhatsApp ${esc((S.config.whatsapp || '51928146619').replace(/^51/, ''))} · ${esc(S.config.correo || 'tecnologiapperu@gmail.com')}</p>
+      </article>
+      <div class="noprint cotacc">
+        <a class="btn green" target="_blank" rel="noopener" href="https://wa.me/${esc(S.config.whatsapp || '51928146619')}?text=${encodeURIComponent(wa)}">Enviar por WhatsApp</a>
+        <button class="btn gold" data-cotpdf>Descargar PDF</button>
+        <button class="btn red" data-orden>Convertir en orden de compra</button>
+        <button class="btn ghost" data-cocerrar>Seguir viendo el catálogo</button>
+      </div></div>`;
+    $('#co').scrollTop = 0;
+  }
   function cerrarOrden() { $('#co').hidden = true; $('#co').innerHTML = ''; document.body.style.overflow = ''; }
+
+  window.addEventListener('afterprint', () => document.body.classList.remove('pcot'));
 
   // ---------- Aviso ----------
   let toastT;
@@ -580,6 +668,8 @@
     if (ds.del) { delete S.cart[ds.del]; guardarCart(); abrirCart(); return; }
     if (ds.cq) { S.cart[ds.cq] = Math.max(1, (S.cart[ds.cq] || 1) + +ds.d); guardarCart(); abrirCart(); return; }
     if ('orden' in ds) { abrirOrden(); return; }
+    if ('cotizar' in ds) { abrirCotizar(); return; }
+    if ('cotpdf' in ds) { document.body.classList.add('pcot'); track('cotizacion_pdf', ''); setTimeout(() => { window.print(); }, 50); return; }
     if ('cocerrar' in ds) { cerrarOrden(); return; }
   });
   document.addEventListener('change', e => {

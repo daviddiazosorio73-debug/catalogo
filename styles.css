@@ -178,3 +178,25 @@ footer.pie{text-align:center;color:var(--mute);font-size:13px;padding:30px 10px}
 .aspi .noimg img{width:26px;height:26px}
 .asform{display:flex;gap:6px;padding:10px 12px}
 .asform input{flex:1;padding:10px;border:1px solid #ccc;border-radius:10px;font-size:15px}
+
+/* Cotización */
+.btn.gold{background:#f2c94c;color:#1b1d27}
+.cotdoc{background:#fff;color:#151823;border-radius:14px;padding:22px;font-size:14px}
+.cotdoc header{display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:3px solid #e8264f;padding-bottom:10px}
+.cotdoc header img{height:42px}.cotdoc header div{text-align:right;font-size:13px}.cotdoc header b{font-size:20px;color:#e8264f}
+.cotdoc .rib{background:#151823;color:#f2c94c;text-align:center;font-weight:700;letter-spacing:.06em;padding:6px;border-radius:6px;margin:12px 0}
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;margin-bottom:12px}.cgrid span{display:block;font-size:11px;color:#667}
+.cotdoc table{width:100%;border-collapse:collapse;font-size:13px}.cotdoc th{background:#151823;color:#fff;text-align:left;padding:6px}
+.cotdoc td{padding:6px;border-bottom:1px solid #e3e5ec;vertical-align:top}.cotdoc td:nth-child(n+3),.cotdoc th:nth-child(n+3){text-align:right;white-space:nowrap}.cotdoc td:first-child{white-space:nowrap}
+.cotdoc tfoot td{font-weight:700;font-size:15px;border-top:2px solid #151823}.cotdoc .cond{font-size:11.5px;color:#556;margin:8px 0 0}
+.cotacc{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.cotacc .btn{text-align:center}
+@media (max-width:560px){.cotacc{grid-template-columns:1fr}}
+@media print{
+  html,body.pcot{background:#fff!important}
+  body.pcot>*:not(#co){display:none!important}
+  body.pcot #co{position:static!important;display:block!important;background:#fff!important;inset:auto}
+  body.pcot .cobox{height:auto;overflow:visible;padding:0;background:#fff;width:100%}
+  body.pcot .noprint{display:none!important}
+  body.pcot .cotdoc{border-radius:0;padding:0}
+  body.pcot .cotdoc *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
