@@ -67,6 +67,8 @@ function instalar() {
   ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger('resumenDiario').timeBased().everyDays(1).atHour(7).inTimezone(ZONA).create();
   ScriptApp.newTrigger('alEditar').forSpreadsheet(ID_HOJA).onEdit().create();
+  ScriptApp.newTrigger('importarStock').timeBased().everyHours(1).create();
+  ScriptApp.newTrigger('reporteFaltantes').timeBased().everyDays(1).atHour(18).nearMinute(30).inTimezone(ZONA).create();
   Logger.log('Listo: lun-jue llamadas 7 a. m., viernes revisión, registro automático. IA: ' + (clave_() ? 'con clave' : 'falta GEMINI_API_KEY'));
   resumenDiario(true); // correo de prueba
 }
@@ -416,7 +418,7 @@ function doGet(e) {
 /** Única puerta del Panel: valida la clave y llama a la función permitida. */
 function api(k, fn, args) {
   if (!clavePanel_() || k !== clavePanel_()) throw new Error('Acceso no autorizado');
-  const ok = { panelDatos, panelRegistrar, panelRevision, panelEstadoPedido, panelProductos, panelIA, panelNotasIA, panelZonas, panelNuevoCliente };
+  const ok = { panelDatos, panelRegistrar, panelRevision, panelEstadoPedido, panelProductos, panelIA, panelNotasIA, panelZonas, panelNuevoCliente, panelGuardarCotizacion };
   if (!ok[fn]) throw new Error('Función no permitida');
   return ok[fn].apply(null, args || []);
 }
@@ -563,11 +565,13 @@ function panelProductos() {
     const c = n => h.findIndex(x => x.indexOf(n) === 0);
     const iId = c('ID'), iCod = c('Código'), iMar = c('Marca'), iLis = c('Lista'), iCat = c('Categoría'), iNom = c('Producto'),
       iPvp = c('PVP'), iEst = c('Estado'), iOfe = c('Oferta'), iPd = c('Precio distribuidor');
+    const ST = stockMapa_();
     const num = x => typeof x === 'number' ? x : Number(String(x).replace(/,/g, '')) || 0;
     return sh.getRange(2, 1, sh.getLastRow() - 1, h.length).getValues()
       .filter(r => r[iId] && r[iEst] !== 'Oculto' && r[iEst] !== 'Agotado')
       .map(r => ({ id: String(r[iId]), c: String(r[iCod]), n: String(r[iNom]), m: String(r[iMar] || ''), l: String(r[iLis] || ''), k: String(r[iCat] || ''),
-        p: num(r[iPvp]), d: iPd >= 0 ? num(r[iPd]) : 0, o: String(r[iOfe] || '') }));
+        p: num(r[iPvp]), d: iPd >= 0 ? num(r[iPd]) : 0, o: String(r[iOfe] || '') }))
+      .map(p => { const s = ST[claveM_(p.c)]; p.s = s ? s.disp : null; return p; });
   } catch (e) {
     const r = UrlFetchApp.fetch(CATALOGO_API + '?accion=productos', { muteHttpExceptions: true });
     const d = JSON.parse(r.getContentText());
@@ -715,4 +719,154 @@ function altaCliente_(sh, x, nota, llamarHoy) {
   if (col('Fecha próx. acción')) sh.getRange(fila, col('Fecha próx. acción')).setNumberFormat('dd/mm/yyyy');
   if (llamarHoy) marcarHoy(fila, llamarHoy);
   return { ok: true, nuevo: true, id, zona };
+}
+
+// =====================================================================
+//  STOCK de proveedores · importación varias veces al día · reporte diario de faltantes
+//  Hojas en la base maestra: «Stock», «Proveedores», «Cotizaciones», «Faltantes».
+// =====================================================================
+const claveM_ = s => String(s || '').toUpperCase().replace(/[^A-Z0-9.]/g, '');
+function base_() { return SpreadsheetApp.openById(BASE_MAESTRA); }
+
+/** clave de modelo → { disp, total, prov, marca, act } */
+function stockMapa_() {
+  const sh = base_().getSheetByName('Stock'); if (!sh || sh.getLastRow() < 2) return {};
+  const m = {};
+  sh.getRange(2, 1, sh.getLastRow() - 1, 12).getValues().forEach(r => {
+    const k = claveM_(r[4] || r[3]); if (!k) return;
+    const x = m[k] || (m[k] = { disp: 0, total: 0, prov: String(r[0]), marca: String(r[1]), act: r[11] });
+    x.disp += Number(r[5]) || 0; x.total += Number(r[6]) || 0;
+  });
+  return m;
+}
+
+/**
+ * Importa el stock de cada proveedor que tenga «Hoja de stock» en «Proveedores» (Google Sheets compartida
+ * con esta cuenta). Reemplaza solo las filas de ese proveedor. Corre cada hora de 7 a. m. a 8 p. m.
+ */
+function importarStock() {
+  const b = base_(), pv = b.getSheetByName('Proveedores'), st = b.getSheetByName('Stock');
+  if (!pv || !st || pv.getLastRow() < 2) return;
+  const h = pv.getRange(1, 1, 1, pv.getLastColumn()).getValues()[0].map(String);
+  const c = n => h.findIndex(x => x.indexOf(n) === 0);
+  const filas = pv.getRange(2, 1, pv.getLastRow() - 1, h.length).getValues();
+  const ahora = Utilities.formatDate(new Date(), ZONA, 'dd/MM/yyyy HH:mm');
+  filas.forEach((r, i) => {
+    const prov = String(r[c('Proveedor')] || '').trim(), fuente = String(r[c('Hoja de stock')] || '').trim();
+    if (!prov || !fuente) return;
+    try {
+      const id = (fuente.match(/[-\w]{25,}/) || [fuente])[0];
+      const ss = SpreadsheetApp.openById(id);
+      const hoja = String(r[c('Pestaña')] || '').trim() ? ss.getSheetByName(String(r[c('Pestaña')]).trim()) : ss.getSheets()[0];
+      const v = hoja.getDataRange().getDisplayValues();
+      const norm = s => normT_(s).replace(/\s+/g, '');
+      const cm = norm(r[c('Columna modelo')] || 'modelo'), cd = norm(r[c('Columna disponible')] || 'disponible'), cmar = norm(r[c('Columna marca')] || '');
+      const fh = v.findIndex(row => row.some(x => norm(x) === cm) && row.some(x => norm(x) === cd));
+      if (fh < 0) throw new Error('No encuentro las columnas «' + r[c('Columna modelo')] + '» y «' + r[c('Columna disponible')] + '»');
+      const H = v[fh].map(norm), iM = H.indexOf(cm), iD = H.indexOf(cd), iMa = cmar ? H.indexOf(cmar) : -1;
+      let marca = '';
+      const nuevas = v.slice(fh + 1).filter(x => String(x[iM]).trim()).map(x => {
+        if (iMa >= 0 && String(x[iMa]).trim()) marca = String(x[iMa]).trim();
+        const d = parseInt(String(x[iD]).replace(/[^\d-]/g, ''), 10) || 0;
+        return [prov, marca, '', String(x[iM]).trim(), claveM_(x[iM]), d, '', '', '', '', '', ahora];
+      });
+      // reemplaza las filas de ese proveedor
+      const todo = st.getLastRow() > 1 ? st.getRange(2, 1, st.getLastRow() - 1, 12).getValues() : [];
+      const quedan = todo.filter(x => String(x[0]) !== prov).concat(nuevas);
+      if (st.getLastRow() > 1) st.getRange(2, 1, st.getLastRow() - 1, 12).clearContent();
+      if (quedan.length) st.getRange(2, 1, quedan.length, 12).setValues(quedan);
+      pv.getRange(i + 2, c('Última importación') + 1).setValue(ahora + ' · ' + nuevas.length + ' modelos');
+    } catch (e) {
+      pv.getRange(i + 2, c('Última importación') + 1).setValue(ahora + ' · ERROR: ' + e.message);
+    }
+  });
+}
+
+/** Líneas pendientes de atender: pedidos (hoja de ventas y web) y cotizaciones de los últimos 15 días. */
+function demanda_() {
+  const docs = {}; // doc → { empresa, origen, lineas:[{cod, cant}] }
+  const add = (doc, empresa, origen, cod, cant) => {
+    if (!cod || !(cant > 0)) return;
+    const d = docs[doc] || (docs[doc] = { empresa: empresa, origen: origen, lineas: [] });
+    d.lineas.push({ cod: String(cod).replace(/^'/, '').trim(), cant: Number(cant) });
+  };
+  const cerrado = s => /entreg|cancel|anul|factur|perdid|rechaz/i.test(String(s));
+  // 1) Pedidos de la hoja de ventas (incluye las órdenes web)
+  try {
+    const p = hoja_().getSheetByName('Pedidos');
+    if (p.getLastRow() > 1) p.getRange(2, 1, p.getLastRow() - 1, 14).getValues().forEach(r => {
+      if (!r[1] || cerrado(r[10])) return; add(String(r[1]), String(r[3]), 'Pedido', r[5], r[7]);
+    });
+  } catch (e) { /* */ }
+  const b = base_();
+  // 2) Órdenes web que no estén ya en la hoja de ventas
+  try {
+    const o = b.getSheetByName('Pedidos');
+    if (o.getLastRow() > 1) o.getRange(2, 1, o.getLastRow() - 1, 13).getValues().forEach(r => {
+      if (!r[0] || docs[r[0]] || cerrado(r[12])) return;
+      String(r[8]).split('|').forEach(x => { const m = x.match(/(.+?)\s*×\s*(\d+)/); if (m) add(String(r[0]), String(r[2]), 'Orden web', m[1], +m[2]); });
+    });
+  } catch (e) { /* */ }
+  // 3) Cotizaciones abiertas (Panel y web) de los últimos 15 días
+  try {
+    const q = b.getSheetByName('Cotizaciones'), lim = new Date(Date.now() - 15 * 864e5);
+    if (q.getLastRow() > 1) q.getRange(2, 1, q.getLastRow() - 1, 8).getValues().forEach(r => {
+      if (!r[1] || (r[0] instanceof Date && r[0] < lim) || cerrado(r[7]) || /ganad|vendid/i.test(String(r[7]))) return;
+      String(r[5]).split('|').forEach(x => { const m = x.match(/(.+?)\s*×\s*(\d+)/); if (m) add(String(r[1]), String(r[4]), 'Cotización ' + r[2], m[1], +m[2]); });
+    });
+  } catch (e) { /* */ }
+  return docs;
+}
+
+/** Reporte de fin de día (lun-vie, 6:30 p. m.): qué pedido o cotización no se puede atender con el stock actual. */
+function reporteFaltantes(forzar) {
+  const dow = Number(Utilities.formatDate(new Date(), ZONA, 'u'));
+  if (!forzar && dow > 5) return;
+  const st = stockMapa_(), docs = demanda_();
+  const cat = {}; try { panelProductos().forEach(p => { cat[claveM_(p.c)] = p; }); } catch (e) { /* */ }
+  const marcaDe = (cod, s) => (cat[claveM_(cod)] && (cat[claveM_(cod)].m || (/oster/i.test(cat[claveM_(cod)].l) ? 'Oster' : ''))) || (s && s.marca) || '—';
+  // demanda total por código (para avisar cuando el stock no alcanza para todos)
+  const tot = {}; Object.keys(docs).forEach(k => docs[k].lineas.forEach(l => { tot[claveM_(l.cod)] = (tot[claveM_(l.cod)] || 0) + l.cant; }));
+  const hoy = Utilities.formatDate(new Date(), ZONA, 'dd/MM/yyyy HH:mm');
+  const filas = [], porEmpresa = {};
+  let nFalta = 0, nSinDato = 0;
+  Object.keys(docs).forEach(doc => {
+    const d = docs[doc];
+    d.lineas.forEach(l => {
+      const k = claveM_(l.cod), s = st[k];
+      let estado, disp = '', falta = '';
+      if (!s) { estado = '⚠️ Sin dato de stock'; nSinDato++; }
+      else {
+        disp = s.disp;
+        if (s.disp >= l.cant) estado = tot[k] > s.disp ? '🟡 Alcanza, pero no para todos (' + tot[k] + ' pedidos)' : '✅ Hay stock';
+        else { falta = l.cant - s.disp; estado = s.disp ? '❌ Falta ' + falta : '❌ Sin stock'; nFalta++; }
+      }
+      const fila = [hoy, d.empresa, d.origen + ' ' + doc, marcaDe(l.cod, s), l.cod, l.cant, disp, falta, estado, s ? s.prov : ''];
+      filas.push(fila);
+      ((porEmpresa[d.empresa] = porEmpresa[d.empresa] || {})[fila[3]] = porEmpresa[d.empresa][fila[3]] || []).push(fila);
+    });
+  });
+  const sh = base_().getSheetByName('Faltantes');
+  if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, 10).clearContent();
+  if (filas.length) sh.getRange(2, 1, filas.length, 10).setValues(filas);
+  // antigüedad del stock por proveedor
+  const act = {}; Object.keys(st).forEach(k => { act[st[k].prov] = st[k].act; });
+  const color = e => /❌/.test(e) ? '#c62828' : /⚠️|🟡/.test(e) ? '#a36b00' : '#1b7f3b';
+  const html = '<h2>Stock vs pedidos y cotizaciones · ' + hoy + '</h2>' +
+    '<p><b>' + nFalta + '</b> línea(s) sin stock suficiente · <b>' + nSinDato + '</b> sin dato de stock (proveedor sin stock cargado).</p>' +
+    '<p style="color:#666">Stock usado: ' + (Object.keys(act).map(p => p + ' (' + (act[p] instanceof Date ? fmt_(act[p], 'dd/MM HH:mm') : act[p]) + ')').join(', ') || 'ninguno') + '</p>' +
+    (Object.keys(porEmpresa).sort().map(e => '<h3>' + e + '</h3>' + Object.keys(porEmpresa[e]).sort().map(m =>
+      '<p style="margin:6px 0 2px"><b>' + m + '</b></p><table cellpadding="4" style="border-collapse:collapse;font-size:13px">' +
+      porEmpresa[e][m].map(f => '<tr><td>' + f[2] + '</td><td><b>' + f[4] + '</b></td><td>pide ' + f[5] + '</td><td>disp. ' + (f[6] === '' ? '—' : f[6]) + '</td><td style="color:' + color(f[8]) + '"><b>' + f[8] + '</b></td></tr>').join('') + '</table>').join('')).join('') || '<p>No hay pedidos ni cotizaciones abiertas.</p>') +
+    '<p style="color:#666">Detalle en la hoja «Faltantes» de la base maestra.</p>';
+  MailApp.sendEmail({ to: correo_(), subject: (nFalta ? '❌ ' + nFalta + ' faltante(s)' : '✅ Stock OK') + ' · cierre del día · Tecno Log IA', htmlBody: html, name: 'Tecno Log IA · Stock' });
+  return { faltan: nFalta, sinDato: nSinDato, lineas: filas.length };
+}
+
+/** Panel: guarda la cotización enviada al cliente (para el control de stock y el seguimiento). */
+function panelGuardarCotizacion(x) {
+  const sh = base_().getSheetByName('Cotizaciones');
+  const numero = 'COT-P-' + Utilities.formatDate(new Date(), ZONA, 'yyMMdd-HHmm');
+  sh.appendRow([new Date(), numero, 'Panel', "'" + String(x.ruc || ''), String(x.razon || ''), (x.items || []).map(i => i.c + ' × ' + i.q).join(' | '), Number(x.total) || 0, 'Abierta', 'Panel', '']);
+  return { ok: true, numero };
 }

@@ -186,6 +186,7 @@ function registrarOrden_(d) {
     const carpeta = carpeta_();
     const firmaBlob = Utilities.newBlob(Utilities.base64Decode(d.firma.split(',')[1]), 'image/png', numero + '_firma.png');
     const firmaFile = carpeta.createFile(firmaBlob);
+    const firmaReg = registrarFirma_(ss, ruc, d.razon, d.contacto, numero, firmaFile.getUrl(), d.firma);
 
     // PDF de la orden
     const money = n => 'S/ ' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -198,20 +199,21 @@ function registrarOrden_(d) {
       table{width:100%;border-collapse:collapse;margin-top:10px} th{background:#14161f;color:#fff;text-align:left;padding:6px;font-size:10px}
       td{border-bottom:1px solid #ddd;padding:6px;vertical-align:top} .tot td{border:none;font-size:12px}
       td.r,th.r,td.n{white-space:nowrap} .top h1{white-space:nowrap} .logo{height:46px}
-      .box{border:1px solid #ccc;border-radius:6px;padding:10px;margin-top:6px} .firma img{height:90px}
+      .box{border:1px solid #ccc;border-radius:6px;padding:10px;margin-top:6px} .firma{margin-top:28px;width:300px;text-align:center;page-break-inside:avoid} .firma img{height:90px;display:block;margin:0 auto} .linea{border-top:1px solid #1b1d26;margin-top:2px;padding-top:4px}
     </style></head><body>
       <table class="top"><tr><td><img class="logo" src="${logoData_()}"><br><div class="muted">Tecnología e IA para el Perú · WhatsApp ${esc_(cfg.whatsapp.replace(/^51/, ''))} · ${esc_(cfg.correo)}</div>
       <div class="tag">SOLO DISTRIBUIDORES Y MAYORISTAS</div></td>
       <td class="r"><h1>ORDEN DE COMPRA</h1><div><b>N° ${numero}</b></div><div>Fecha: ${fecha}</div><div>Válida hasta: ${vence}</div></td></tr></table>
       <div class="box"><b>Cliente:</b> ${esc_(d.razon)} &nbsp; <b>RUC:</b> ${ruc}<br>
-      <b>Contacto:</b> ${esc_(d.contacto)} &nbsp; <b>Celular:</b> ${esc_(d.celular)} &nbsp; <b>Correo:</b> ${esc_(d.email)}<br>
+      <b>Contacto:</b> ${esc_(d.contacto)} &nbsp; <b>Correo:</b> ${esc_(d.email)}<br>
       <b>Dirección de entrega:</b> ${esc_(d.direccion)} · ${esc_(d.ciudad)}${d.notas ? '<br><b>Notas:</b> ' + esc_(d.notas) : ''}</div>
       <table><tr><th>#</th><th>Código</th><th>Marca</th><th>Producto</th><th class="r">Cant.</th><th class="r">P. unit.</th><th class="r">Subtotal</th></tr>${filas}
       <tr class="tot"><td colspan="6" class="r">Op. gravada</td><td class="r">${money(total - igv)}</td></tr>
       <tr class="tot"><td colspan="6" class="r">IGV (18%)</td><td class="r">${money(igv)}</td></tr>
       <tr class="tot"><td colspan="6" class="r"><b>TOTAL</b></td><td class="r"><b>${money(total)}</b></td></tr></table>
       <p class="muted">Precios en soles, incluyen IGV (${esc_(cfg.precios)} · ${esc_(cfg.vigencia)}). Sujetos a stock y confirmación de ${esc_(cfg.nombre)}. Los productos marcados como «próximo ingreso» se despachan a su llegada.</p>
-      <div class="box firma"><b>Conformidad del cliente</b><br><img src="${d.firma}"><br>${esc_(d.contacto || d.razon)} · RUC ${ruc} · ${fecha}</div>
+      <table style="width:100%;margin-top:30px"><tr><td style="border:none;vertical-align:bottom" class="muted">Firmado electrónicamente en ${esc_(cfg.nombre)} el ${fecha}.<br>Registro de firma: ${firmaReg.version}</td>
+      <td style="border:none;width:320px"><div class="firma"><img src="${d.firma}"><div class="linea"><b>${esc_(d.contacto || d.razon)}</b><br>${esc_(d.razon)} · RUC ${ruc}<br>Firma del cliente · conformidad de la orden</div></div></td></tr></table>
     </body></html>`;
     const pdf = Utilities.newBlob(html, 'text/html', numero + '.html').getAs('application/pdf').setName(numero + ' - ' + d.razon + '.pdf');
     const pdfFile = carpeta.createFile(pdf);
@@ -277,6 +279,18 @@ function avisarHoy_(ruc, motivo) {
   return true;
 }
 
+// ---------- Firmas: se guarda cada firma; si es distinta a la anterior del mismo RUC, es una nueva versión ----------
+function registrarFirma_(ss, ruc, razon, firmante, doc, url, dataUrl) {
+  const sh = ss.getSheetByName('Firmas');
+  if (!sh) return { version: doc };
+  const huella = Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(dataUrl))).slice(0, 16);
+  const prev = sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, 8).getValues().filter(r => String(r[1]).replace(/\D/g, '') === ruc) : [];
+  const igual = prev.filter(r => r[6] === huella)[0];
+  const version = igual ? String(igual[7]).split(' ')[0] : 'F' + (prev.length ? Math.max.apply(null, prev.map(r => Number(String(r[7]).replace(/\D/g, '')) || 0)) + 1 : 1);
+  sh.appendRow([new Date(), "'" + ruc, razon, firmante || '', doc, url, huella, version + (igual ? ' (misma firma)' : ' (nueva)')]);
+  return { version: ruc + '-' + version };
+}
+
 // ---------- Cotizaciones web: el cliente nuevo entra a «Clientes» como «Nuevo» ----------
 function registrarCotizacion_(d) {
   const ruc = String(d.ruc || '').replace(/\D/g, '');
@@ -298,6 +312,7 @@ function registrarCotizacion_(d) {
       accion: 'Llamar: cotización web ' + numero,
     }, nota.slice(0, 400), 'Cotización web ' + numero + ' · S/ ' + total.toFixed(2) + ': llamar y cerrar');
   } finally { lock.releaseLock(); }
+  try { SpreadsheetApp.openById(BASE_MAESTRA).getSheetByName('Cotizaciones').appendRow([new Date(), numero, 'Web', "'" + ruc, String(d.razon || ''), lineas.join(' | '), total, 'Abierta', String(d.origen || '').slice(0, 20), r.nuevo ? 'Cliente nuevo ' + r.id : r.id]); } catch (e) { /* */ }
   SpreadsheetApp.openById(BASE_MAESTRA).getSheetByName('Eventos').appendRow([new Date(), String(d.sesion || '').slice(0, 40), 'cotizacion',
     (numero + ' · ' + (r.nuevo ? 'cliente nuevo ' : '') + r.id).slice(0, 120), total, "'" + ruc, String(d.origen || '').slice(0, 20)]);
   return { ok: true, nuevo: r.nuevo, id: r.id };

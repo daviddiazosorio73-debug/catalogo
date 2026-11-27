@@ -236,6 +236,7 @@ function cotizar(){
   var filtro = 'Ofertas';
   var precio = function(p){ return p.d > 0 ? p.d : p.p; };
   var etiqueta = function(p){ return p.d > 0 ? '<b>'+money(p.d)+'</b> distribuidor <s style="opacity:.6">PVP '+money(p.p)+'</s>' : money(p.p); };
+  var stk = function(p){ return p.s === null || p.s === undefined ? '<span style="color:var(--mut)">stock s/d</span>' : p.s > 0 ? '<span style="color:#3ddc84">disp. '+p.s+'</span>' : '<b style="color:var(--red)">sin stock</b>'; };
   var marcaDe = function(p){ return p.m || (p.l.indexOf('Oster') >= 0 ? 'Oster' : 'Otras'); };
   var chips = function(){
     var ms = {}; prods.forEach(function(p){ ms[marcaDe(p)] = (ms[marcaDe(p)]||0)+1; });
@@ -248,13 +249,13 @@ function cotizar(){
       if (filtro === 'Ofertas' && !q.length && !p.o) return false;
       if (filtro !== 'Ofertas' && filtro !== 'Todas' && marcaDe(p) !== filtro) return false;
       var t=(p.c+' '+p.n+' '+p.m+' '+p.k+' '+p.l).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); return q.every(function(w){return t.indexOf(w)>=0;}); });
-    $('#cl').innerHTML = '<div class="mini">'+r.length+' producto(s)'+(r.length>60?' · mostrando 60, busca para afinar':'')+'</div>' + r.slice(0,60).map(function(p){ return '<div class="prod"><span><b>'+esc(p.c)+'</b> '+esc(p.n)+'<br>'+etiqueta(p)+(p.o?' · oferta '+esc(p.o):'')+'</span><button class="btn ghost" data-a="'+esc(p.id)+'">+1</button></div>'; }).join('');
+    $('#cl').innerHTML = '<div class="mini">'+r.length+' producto(s)'+(r.length>60?' · mostrando 60, busca para afinar':'')+'</div>' + r.slice(0,60).map(function(p){ return '<div class="prod"><span><b>'+esc(p.c)+'</b> '+esc(p.n)+'<br>'+etiqueta(p)+(p.o?' · oferta '+esc(p.o):'')+' · '+stk(p)+'</span><button class="btn ghost" data-a="'+esc(p.id)+'">+1</button></div>'; }).join('');
   };
   var porId = function(id){ return prods.filter(function(x){return x.id===id;})[0]; };
   var total = function(){ return Object.keys(cot).reduce(function(t,id){ return t + precio(porId(id))*cot[id]; }, 0); };
   var sel2 = function(){
     var ids = Object.keys(cot);
-    $('#cs').innerHTML = ids.length ? ids.map(function(id){ var p = porId(id); return '<div class="prod"><span>'+cot[id]+' × <b>'+esc(p.c)+'</b> '+esc(p.n)+'<br>'+money(precio(p))+' c/u · '+money(precio(p)*cot[id])+'</span><button class="btn ghost" data-q="'+esc(id)+'">−</button></div>'; }).join('') + '<div class="prod"><b>Total (inc. IGV)</b><b>'+money(total())+'</b></div>' : 'Nada aún.';
+    $('#cs').innerHTML = ids.length ? ids.map(function(id){ var p = porId(id); return '<div class="prod"><span>'+cot[id]+' × <b>'+esc(p.c)+'</b> '+esc(p.n)+'<br>'+money(precio(p))+' c/u · '+money(precio(p)*cot[id])+(p.s!==null&&p.s!==undefined&&p.s<cot[id]?' · <b style="color:var(--red)">⚠ disp. '+p.s+'</b>':'')+'</span><button class="btn ghost" data-q="'+esc(id)+'">−</button></div>'; }).join('') + '<div class="prod"><b>Total (inc. IGV)</b><b>'+money(total())+'</b></div>' : 'Nada aún.';
   };
   div.onclick = function(e){ var b = e.target.closest('button'); if (!b) return;
     if (b.dataset.f){ filtro = b.dataset.f; chips(); lista(); }
@@ -266,8 +267,9 @@ function cotizar(){
       ids.map(function(id){ var p = porId(id); return '• '+cot[id]+' × '+p.c+' · '+p.n+' — '+money(precio(p))+' c/u = '+money(precio(p)*cot[id]); }).join('\n')+
       '\nTOTAL: '+money(total())+'\nVálida 7 días, sujeta a stock. Fotos y fichas: '+D.catalogo+'?d=cot\nDavid Díaz · Tecno Log IA (solo distribuidores y mayoristas).';
   };
-  $('#ccopy').onclick = function(){ if (!Object.keys(cot).length) return toast('Agrega productos'); navigator.clipboard.writeText(texto()).then(function(){ toast('Cotización copiada'); }); };
-  $('#cwa').onclick = function(){ if (!Object.keys(cot).length) return toast('Agrega productos');
+  $('#ccopy').onclick = function(){ if (!Object.keys(cot).length) return toast('Agrega productos'); guardar(); navigator.clipboard.writeText(texto()).then(function(){ toast('Cotización copiada'); }); };
+  var guardar = function(){ run('panelGuardarCotizacion', { ruc: c.ruc, razon: c.razon, total: total(), items: Object.keys(cot).map(function(id){ return { c: porId(id).c, q: cot[id] }; }) }).catch(function(){}); };
+  $('#cwa').onclick = function(){ if (!Object.keys(cot).length) return toast('Agrega productos'); guardar();
     window.open('https://wa.me/'+(c.wa||'')+'?text='+encodeURIComponent(texto()), '_blank'); };
   $('#cq').oninput = function(){ clearTimeout(lista.t); lista.t = setTimeout(lista, 200); };
   var listo = function(){ chips(); lista(); sel2(); };

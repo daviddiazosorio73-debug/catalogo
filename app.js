@@ -598,7 +598,7 @@
         <p class="rib">SOLO PARA DISTRIBUIDORES Y MAYORISTAS</p>
         <div class="cgrid">
           <div><span>Cliente</span><b>${esc(d.razon)}</b></div><div><span>RUC</span><b>${esc(d.ruc)}</b></div>
-          <div><span>Contacto</span><b>${esc(d.contacto)}</b></div><div><span>Celular</span><b>${esc(d.celular)}</b></div>
+          <div><span>Contacto</span><b>${esc(d.contacto)}</b></div><div><span>Ciudad</span><b>${esc(d.ciudad || '—')}</b></div>
           <div><span>Fecha</span><b>${fmt(hoy)}</b></div><div><span>Válida hasta</span><b>${fmt(vence)}</b></div>
         </div>
         <table><thead><tr><th>Código</th><th>Descripción</th><th>Cant.</th><th>P. unit.</th><th>Subtotal</th></tr></thead><tbody>
